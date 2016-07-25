@@ -1,0 +1,25 @@
+http://ledshoppe.com/Product/led/LE1002.htm
+
+Quantity : Package of 100 Pcs
+
+Emitted Colour : WHITE
+Size (mm) : 5mm T1 3/4
+Lens Colour : Water Clear
+Peak Wave Length (nm) : N/A
+
+	Forward Voltage (V) : 3.2 ~ 3.8
+
+Reverse Current (uA) : <=30
+Luminous Intensity Typ Iv (mcd) : Average in 13000
+Life Rating : 100,000 Hours
+Viewing Angle : ±10°
+Absolute Maximum Ratings (Ta=25°C)
+Max Power Dissipation : 80mw
+
+	Max Continuous Forward Current : 30mA
+
+Max Peak Forward Current : 75mA
+Reverse Voltage : 5~6V
+Lead Soldering Temperature : 240°C (<5Sec)
+Operating Temperature Range : -25°C ~ +85°C
+Preservative Temperature Range : -30°C ~ +100°C
