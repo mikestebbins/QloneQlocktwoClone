@@ -76,20 +76,10 @@ Teensy 3.1 / 3.2
 //-------------------------------------------------------------------------------------------------------------
 //// #include <Arduino.h>
 //// #include <Wire.h>
-//// #include <DS1307.h>  
-//// #include <LedControl.h>
+
 // CHECK OR UPDATE
 #include "FastLED.h"
 #include <binary.h>
-
-//// // lines to drive the two MAX7219 LED controllers
-//// const int LC1CLK   = 4;
-//// const int LC1LOAD  = 13;
-//// const int LC1DATA  = 2;
-//// const int LC2CLK   = 5;
-//// const int LC2LOAD  = 11;
-//// const int LC2DATA  = 12;
-//// // clock (RTC) uses analog pin4 (SDA) and pin5 (CLK) for i2c communication
 
 //-------------------------------------------------------------------------------------------------------------
 //CONSTANTS
@@ -138,12 +128,10 @@ int photocellReading; // the analog reading from the sensor divider
 unsigned long ledLastUpdate = 0;
 int currentMode = MODEDEFAULT;
 boolean forceUpdate = true;
+
 int cHour;
 int cMin;
 int cSec;
-
-////LedControl LC1=LedControl(LC1DATA, LC1CLK, LC1LOAD, 1); 
-////LedControl LC2=LedControl(LC2DATA, LC2CLK, LC2LOAD, 1);
 
 long previousMillis = 0;      // will store last time LED was updated
 long pause = 10;              // (millis) interval at which to blink individual letters, test case
@@ -164,23 +152,13 @@ int dly = 1500;      //length of pause between Mike&Em and heart
 void setup(void) {
   delay(2000); // sanity check delay - allows reprogramming if accidently blowing power w/leds
   FastLED.addLeds<DOTSTAR, RGB>(leds, NUM_LEDS);
-  // setup pins
-  //// pinMode (LC1CLK, OUTPUT);
-  //// pinMode (LC1LOAD, OUTPUT);
-  //// pinMode (LC1DATA, OUTPUT);
-  //// pinMode (LC2CLK, OUTPUT);
-  //// pinMode (LC2LOAD, OUTPUT);
-  //// pinMode (LC2DATA, OUTPUT);
+
   //CHECK OR UPDATE
   pinMode (BUT1, INPUT);
   pinMode (BUT2, INPUT);
   pinMode (BUT3, INPUT);  
 
-  // turn on LED controller;
-  //// LC1.shutdown(0,false);
-  //// LC2.shutdown(0,false);
-
-Serial.begin(38400);
+  Serial.begin(38400);
 }
 
 //-------------------------------------------------------------------------------------------------------------
@@ -229,8 +207,8 @@ void loop() {
   
 // Read and serial print brightness of photocell
     photocellReading = analogRead(photocellPin);
-//Serial.print("Analog reading = ");
-Serial.println(photocellReading); // the raw analog reading
+    //Serial.print("Analog reading = ");
+    //Serial.println(photocellReading); // the raw analog reading
 
 // modified non-linear mapping of photoresitor to LED intensity
 if (photocellReading > 499 && photocellReading < 600 ) {currentLEDIntensity = 2;  }
@@ -273,7 +251,7 @@ void doButton3() {
   if (min == 59) min = 0;
   else min = min+1;
   RTC.set(DS1307_MIN,min);
-  RTC.set(DS1307_SEC,0);              // always zero the seconds.
+  RTC.set(DS1307_SEC,0);              // zero the seconds.
 }
 
 
