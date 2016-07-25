@@ -1,60 +1,123 @@
+//    DELETE ALL CODE THAT BEGINS WITH ////
 /*
-   Copyright 2011 Michael Stebbins
-   http://students.washington.edu/mikesteb/projects/Qlock_LED_Clock/Qlock_LED_clock.html
-   Licensed under a Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported License
-      
-   Based on code from Marcus Liang's QlockTwo Clone, 
-   Copyright 2009, information: http://www.flickr.com/photos/19203306@N00/sets/72157622998814956/ 
-   Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file 
-   except in compliance with the License.  You may obtain a copy of the License at
-   http://www.apache.org/licenses/LICENSE-2.0
-   Unless required by applicable law or agreed to in writing, software distributed under the 
-   License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, 
-   either express or implied. See the License for the specific language governing permissions 
-   and limitations under the License.
-   
-   Use "Diecimila/Duemilanove with 328P" in Arduino IDE to upload code.
-   Successfully uploaded in Arduino 1.0.5.
-   
-   Ran version 12 for some time in clock, 13 is first attempt at Arduino 1.0.* IDE.
-   Changed #included <WProgram.h> to <Arduino.h>, updated DS1307, LedControl libraries.
-   Replaced 12 LEDs.
-   Increased RSET resistor (see LED driver datasheet) from 22k to 44k (for each one), limiting max current
-   Replaced photoresitor linear mapping to brightness level to simple non-linear mapping for less time with
-      LEDs at maximum, and a reduced maximum (from 15 to 13).
- */
+    Copyright 2016 Michael Stebbins
+    Licensed under a Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported License
 
-#include <Arduino.h>
-#include <Wire.h>
-#include <DS1307.h>  
-#include <LedControl.h>
+    Based on code from Marcus Liang's QlockTwo Clone, 
+    Copyright 2009, information: http://www.flickr.com/photos/19203306@N00/sets/72157622998814956/ 
+    Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file 
+    except in compliance with the License.  You may obtain a copy of the License at
+    http://www.apache.org/licenses/LICENSE-2.0
+    Unless required by applicable law or agreed to in writing, software distributed under the 
+    License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, 
+    either express or implied. See the License for the specific language governing permissions 
+    and limitations under the License.
+
+    Ran version 14 for some time, with LEDs continuing to fail.  Decided to replace individual, inexpensive
+    white LEDs with Adafruit Dotstar individually-addressable Cool White color temp lights.
+    version_reboot starts from version 14, with changes to move to Teensy 3.2 (with soldered-on chip for 
+    Teensy RealTimeClock), Dotstar lights and 3.3 to 5 volt level shifter. This completely changes the 
+    "charlie-plexed" work and LED drivers necessary in the previous version.
+ 
+*  LAST UPDATED: 07-24-2016
+*  Copyright 2016 Mike Stebbins
+*  Arduino X.X.X and Windows 10 used to upload
+
+TODO's:
+
+//-------------------------------------------------------------------------------------------------------------
+//PIN ASSIGNMENTS
+//-------------------------------------------------------------------------------------------------------------
+                          
+Teensy 3.1 / 3.2
+                                  |      |
+                          --------|      |--------
+        Power Supply (-) [] Gnd              Vin [] Power Supply (+)
+                         [] RX1             AGND []
+                         [] TX1             3.3V []             
+                         [] 02                23 []
+                         [] 03                22 []
+                         [] 04                21 []
+                         [] 05                20 []
+                         [] 06                19 [] SCL
+                         [] 07                18 [] SDA
+                         [] 08                17 []
+                         |  09                16 []
+                         [] 10                15 []
+                         [] 11                14 []
+                         [] 12                13 []
+                          |    (+)   (-)         |
+                          |     [] [] [] [] []   |
+                          ------------------------
+                                3 volt coin cell for maintaining RTC
+
+
+ 
+ 74AHCT125 Voltage Level Shifter
+                     --------------
+                GND [] 1OE    VCC [] 5V input
+   Strip 1 CLOCK In [] 1A     4OE [] 
+  Strip 1 CLOCK Out [] 1Y      4A [] 
+                GND [] 2OE     4Y [] 
+    Strip 1 DATA In [] 2A     3OE [] 
+   Strip 1 DATA Out [] 2Y      3A [] 
+         Teensy GND [] GND     3Y [] 
+                     --------------
+
+ Power Supply - 5V, 2.4A
+                        [] +
+                        [] -
+                                        
+//-------------------------------------------------------------------------------------------------------------       
+*/
+
+//-------------------------------------------------------------------------------------------------------------
+//INCLUDES
+//-------------------------------------------------------------------------------------------------------------
+//// #include <Arduino.h>
+//// #include <Wire.h>
+//// #include <DS1307.h>  
+//// #include <LedControl.h>
+// CHECK OR UPDATE
+#include "FastLED.h"
 #include <binary.h>
 
-// lines to drive the two MAX7219 LED controllers
-const int LC1CLK   = 4;
-const int LC1LOAD  = 13;
-const int LC1DATA  = 2;
-const int LC2CLK   = 5;
-const int LC2LOAD  = 11;
-const int LC2DATA  = 12;
-// clock (RTC) uses analog pin4 (SDA) and pin5 (CLK) for i2c communication
+//// // lines to drive the two MAX7219 LED controllers
+//// const int LC1CLK   = 4;
+//// const int LC1LOAD  = 13;
+//// const int LC1DATA  = 2;
+//// const int LC2CLK   = 5;
+//// const int LC2LOAD  = 11;
+//// const int LC2DATA  = 12;
+//// // clock (RTC) uses analog pin4 (SDA) and pin5 (CLK) for i2c communication
 
-// three input buttons
-const int BUT3 = 9;  // minute++
-const int BUT2 = 8;  // hour++
-const int BUT1 = 10;  // change mode++
+//-------------------------------------------------------------------------------------------------------------
+//CONSTANTS
+//-------------------------------------------------------------------------------------------------------------
+
+// How many leds are in the strip?
+#define NUM_LEDS 11
+
+// Data pin that led data will be written out over
+#define DATA_PIN 11
+
+// CHECK OR UPDATE
+#define BUT3 = 9   // minute++
+#define BUT2 = 8   // hour++
+#define BUT1 = 10  // change mode++
 
 // LED intensity  
-// Four levels of light intensity plus off
-const int LEDOFF  = 0;  // not really off
-const int LEDINT1 = 1;
-const int LEDINT2 = 7;
-const int LEDINT3 = 11;
-const int LEDINT4 = 15;
+// CHECK OR UPDATE
+//// // Four levels of light intensity plus off
+//// const int LEDOFF  = 0;  // not really off
+//// const int LEDINT1 = 1;
+//// const int LEDINT2 = 7;
+//// const int LEDINT3 = 11;
+//// const int LEDINT4 = 15;
 
 // Photo resistor cell setup
-int photocellPin = 0; // the cell and 10K pulldown are connected to a0
-int photocellReading; // the analog reading from the sensor divider
+// CHECK OR UPDATE
+int photocellPin = 0; // the cell and 10K pulldown are connected to A0
 
 // MODE
 const int MODEDEFAULT = 0;
@@ -64,58 +127,68 @@ const int MODETEST = 3;
 const int MODELOVE = 4;
 
 // update/debounce delays
-const int ledDelay = 100;       // ms
+const int ledDelay = 100;           //(milliseconds)
+const int buttonPressDelay = 400;   //(milliseconds)
 
-// Global vars for tracking;
-
+//-------------------------------------------------------------------------------------------------------------
+//VARIABLES
+//-------------------------------------------------------------------------------------------------------------
+CRGB leds[NUM_LEDS];  // array of leds, one item for each led in your strip.
+int photocellReading; // the analog reading from the sensor divider
 unsigned long ledLastUpdate = 0;
 int currentMode = MODEDEFAULT;
 boolean forceUpdate = true;
+int cHour;
+int cMin;
+int cSec;
 
-//int lHour, lMin;
-int cHour, cMin, cSec;
+////LedControl LC1=LedControl(LC1DATA, LC1CLK, LC1LOAD, 1); 
+////LedControl LC2=LedControl(LC2DATA, LC2CLK, LC2LOAD, 1);
 
-LedControl LC1=LedControl(LC1DATA, LC1CLK, LC1LOAD, 1); 
-LedControl LC2=LedControl(LC2DATA, LC2CLK, LC2LOAD, 1);
-
-// Variables will change for delays in TEST and LOVE modes:
-long previousMillis = 0;        // will store last time LED was updated
-long pause = 10;               // interval at which to blink individual letters (milliseconds)
-long longpause = 25;          // interval at which to blink whole words (milliseconds)
-int testCase = -1;              // initialize case number 0
-
-void setup(void) {
-
-  // setup pins
-  pinMode (LC1CLK, OUTPUT);
-  pinMode (LC1LOAD, OUTPUT);
-  pinMode (LC1DATA, OUTPUT);
-  pinMode (LC2CLK, OUTPUT);
-  pinMode (LC2LOAD, OUTPUT);
-  pinMode (LC2DATA, OUTPUT);
-  pinMode (BUT1, INPUT);
-  pinMode (BUT2, INPUT);
-  pinMode (BUT3, INPUT);  
-
-  // turn on LED controller;
-  LC1.shutdown(0,false);
-  LC2.shutdown(0,false);
-
-Serial.begin(38400);
-
-}
+long previousMillis = 0;      // will store last time LED was updated
+long pause = 10;              // (millis) interval at which to blink individual letters, test case
+long longpause = 25;          // (millis) interval at which to blink whole words, test case
+int testCase = -1;            // initialize case number for test case
 
 unsigned long but1LastPress = 0;  
 unsigned long but2LastPress = 0;  
 unsigned long but3LastPress = 0;  
 
-const int buttonPressDelay = 400;
-
-int currentLEDIntensity = 0;   // how bright the LEDs are during 
+int currentLEDIntensity = 0;   // how bright the LEDs are 
 char loveCase = 'a';      //initial case for LOVE switchcase
 int dly = 1500;      //length of pause between Mike&Em and heart
 
+//-------------------------------------------------------------------------------------------------------------
+//SETUP
+//-------------------------------------------------------------------------------------------------------------
+void setup(void) {
+  delay(2000); // sanity check delay - allows reprogramming if accidently blowing power w/leds
+  FastLED.addLeds<DOTSTAR, RGB>(leds, NUM_LEDS);
+  // setup pins
+  //// pinMode (LC1CLK, OUTPUT);
+  //// pinMode (LC1LOAD, OUTPUT);
+  //// pinMode (LC1DATA, OUTPUT);
+  //// pinMode (LC2CLK, OUTPUT);
+  //// pinMode (LC2LOAD, OUTPUT);
+  //// pinMode (LC2DATA, OUTPUT);
+  //CHECK OR UPDATE
+  pinMode (BUT1, INPUT);
+  pinMode (BUT2, INPUT);
+  pinMode (BUT3, INPUT);  
+
+  // turn on LED controller;
+  //// LC1.shutdown(0,false);
+  //// LC2.shutdown(0,false);
+
+Serial.begin(38400);
+}
+
+//-------------------------------------------------------------------------------------------------------------
+//LOOP
+//-------------------------------------------------------------------------------------------------------------
 void loop() {
+
+//TODO: ADD IN CODE TO LIGHT UP LEDS, AMONGST OTHER THINGS
 
 // check the buttons for changes
   int but1read = digitalRead(BUT1);
@@ -158,23 +231,6 @@ void loop() {
     photocellReading = analogRead(photocellPin);
 //Serial.print("Analog reading = ");
 Serial.println(photocellReading); // the raw analog reading
-
-/*
-if (photocellReading < 400)  //if the value is below the min, make it the min
-{    photocellReading = 400;
-}
-else if (photocellReading > 900) //if the value is above the max, make it the max
-{    photocellReading = 900; 
-}
-else  // otherwise do nothing
-{}
-
-// Map 0-1023 photocell value to 0-15 for LED intensity
-currentLEDIntensity = map(photocellReading, 400, 900, 1, 15);
-// Serial.print("LED Intensity = ");
-// Serial.println(currentLEDIntensity);
-
-*/
 
 // modified non-linear mapping of photoresitor to LED intensity
 if (photocellReading > 499 && photocellReading < 600 ) {currentLEDIntensity = 2;  }
@@ -221,10 +277,8 @@ void doButton3() {
 }
 
 
-// MODE DEFAULT 
-// Description: This is the default mode of operation.  The words light up based on the time and the 4 corners light up 
-// 				based on the minutes past 5 minutes.
-//  
+// MODE DEFAULT: This is the default mode of operation.  The words light up based on the time and the 4 corners light up 
+// based on the minutes past 5 minutes.
 
 void mode_default() {
 
@@ -282,8 +336,7 @@ void mode_default() {
    forceUpdate = false;
 }
 
-// MODE DEFAULTSEC
-// Description: This is like Mode default except that the dots in the four corners will change every second.
+// MODE DEFAULTSEC: This is like Mode default except that the dots in the four corners will change every second.
 void mode_defaultsec() {
    int hour = RTC.get(DS1307_HR,true);
    int min = RTC.get(DS1307_MIN,false);
@@ -380,8 +433,7 @@ void mode_defaultsec() {
 }
 
 
-// MODE SECONDS
-// Description: The entire face will show the "seconds" the clock is on
+// MODE SECONDS: The entire face will show the "seconds" the clock is on
 void mode_seconds() {
    
    int hour = RTC.get(DS1307_HR,true);
@@ -431,8 +483,7 @@ void mode_seconds() {
    
 }
 
-// MODE TEST
-// Cycle through individual words and then LEDs
+// MODE TEST: Cycle through individual words and then LEDs
 void mode_test() {
 
 // Serial.begin(9600);
@@ -447,30 +498,12 @@ if (testCase < 114)   {
 
           // increment the case number by one, unless it has reached 
           //the last case, then go back to zero:
-
-         // if (testCase < 161) ++testCase; Use this when full test case is run
           if (testCase < 113)   {
           testCase ++; } 
           else     {
         testCase = 0;  }
       }
     }     
-/*
-if (testCase > 113)   {
-      if(currentMillis - previousMillis > longpause) {
-          // save the last time you switched cases
-          previousMillis = currentMillis;  
-          // Serial.println(currentMillis);
-
-          // increment the case number by one, unless it has reached 
-          //the last case, then go back to zero:
-        
-         // if (testCase < 161) ++testCase; Use this when full test case is run
-          if (testCase < 136) ++testCase;
-          else testCase = 0;
-          }
-          }
-*/
 
 switch (testCase) { 
 
@@ -965,8 +998,7 @@ break;
 }
 }
 
-// MODE LOVE
-// Description: The face flashes between Mike & Em and a Heart
+// MODE LOVE: The face flashes between "Mike & Em" and a Heart shape
 void mode_love() {
   
 unsigned long currentMillis = millis();
@@ -1388,4 +1420,3 @@ void HEART() {
 	LC2.setRow(0,3,B00001010);  // line 8
 	LC2.setRow(0,4,B00000100);  // line 9
 }
-
