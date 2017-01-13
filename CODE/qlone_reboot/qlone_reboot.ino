@@ -1,6 +1,6 @@
 //    DELETE ALL CODE THAT BEGINS WITH ////
 /*
-    Copyright 2016 Michael Stebbins
+    Copyright 2017 Michael Stebbins
     Licensed under a Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported License
 
     Based on code from Marcus Liang's QlockTwo Clone, 
@@ -71,14 +71,46 @@ Teensy 3.1 / 3.2
 //-------------------------------------------------------------------------------------------------------------       
 */
 
+/*
+LETTER to LED strip NUMBER decoder
+
+111                                                                    112
+      000   001   002   003   004   005   006   007   008   009   010 
+      021   020   019   018   017   016   015   014   013   012   011
+      022   023   024   025   026   027   028   029   030   031   032   
+      043   042   041   040   039   038   037   036   035   034   033
+      044   045   046   047   048   049   050   051   052   053   054   
+      065   064   063   062   061   060   059   058   057   056   055
+      066   067   068   069   070   071   072   073   074   075   076   
+      087   086   085   084   083   082   081   080   079   078   077
+      088   089   090   091   092   093   094   095   096   097   098   
+      109   108   107   106   105   104   103   102   101   100   099
+110                                                                    113      
+
+
+                      
+min1                                                                   min2                    
+       I     T     L     I     S     Y     M     I     K     E     &
+       A     D     Q     U     A     R     T     E     R     E     M
+       T     W     E     N     T     Y     F     I     V     E     X
+       H     A     L     F     B     T     E     N     F     T     O
+       P     A     S     T     E     R     U     N     I     N     E
+       O     N     E     S     I     X     T     H     R     E     E
+       F     O     U     R     F     I     V     E     T     W     O
+       E     I     G     H     T     E     L     E     V     E     N
+       S     E     V     E     N     T     W     E     L     V     E
+       T     E     N     S     E     O     C     L     O     C     K
+min4                                                                   min3  
+
+*/
+
 //-------------------------------------------------------------------------------------------------------------
 //INCLUDES
 //-------------------------------------------------------------------------------------------------------------
 //// #include <Arduino.h>
 //// #include <Wire.h>
 
-// CHECK OR UPDATE
-#include "FastLED.h"
+#include <Adafruit_DotStar.h>
 #include <binary.h>
 
 //-------------------------------------------------------------------------------------------------------------
@@ -86,10 +118,10 @@ Teensy 3.1 / 3.2
 //-------------------------------------------------------------------------------------------------------------
 
 // How many leds are in the strip?
-#define NUM_LEDS 11
+#define NUM_LEDS 114
 
-// Data pin that led data will be written out over
-#define DATA_PIN 11
+#define DATAPIN    11
+#define CLOCKPIN   10
 
 // CHECK OR UPDATE
 #define BUT3 = 9   // minute++
@@ -117,13 +149,15 @@ const int MODETEST = 3;
 const int MODELOVE = 4;
 
 // update/debounce delays
-const int ledDelay = 100;           //(milliseconds)
+const int ledDelay = 50;           //(milliseconds)
 const int buttonPressDelay = 400;   //(milliseconds)
 
 //-------------------------------------------------------------------------------------------------------------
 //VARIABLES
 //-------------------------------------------------------------------------------------------------------------
-CRGB leds[NUM_LEDS];  // array of leds, one item for each led in your strip.
+Adafruit_DotStar strip = Adafruit_DotStar(
+  NUMPIXELS, DATAPIN, CLOCKPIN, DOTSTAR_BRG);
+
 int photocellReading; // the analog reading from the sensor divider
 unsigned long ledLastUpdate = 0;
 int currentMode = MODEDEFAULT;
@@ -150,8 +184,7 @@ int dly = 1500;      //length of pause between Mike&Em and heart
 //SETUP
 //-------------------------------------------------------------------------------------------------------------
 void setup(void) {
-  delay(2000); // sanity check delay - allows reprogramming if accidently blowing power w/leds
-  FastLED.addLeds<DOTSTAR, RGB>(leds, NUM_LEDS);
+  delay(1000); 
 
   //CHECK OR UPDATE
   pinMode (BUT1, INPUT);
@@ -167,33 +200,6 @@ void setup(void) {
 void loop() {
 
 //TODO: ADD IN CODE TO LIGHT UP LEDS, AMONGST OTHER THINGS
-
-// check the buttons for changes
-  int but1read = digitalRead(BUT1);
-  int but2read = digitalRead(BUT2);
-  int but3read = digitalRead(BUT3);
-
-  if ((but1read == HIGH) && ((millis() - but1LastPress) > buttonPressDelay)) {
-    but1LastPress = millis();
-    doButton1();
-  }
-  else if ((but1read == LOW) && ((millis() - but1LastPress) > buttonPressDelay ))
-    but1LastPress = 0;  // reset
-  
-  if ((but2read == HIGH) && ((millis() - but2LastPress) > buttonPressDelay)) {
-    but2LastPress = millis();
-    doButton2();
-  }
-  else if ((but2read == LOW) && ((millis() - but2LastPress) > buttonPressDelay ))
-    but2LastPress = 0;  // reset
-    
-  if ((but3read == HIGH) && ((millis() - but3LastPress) > buttonPressDelay)) {
-    but3LastPress = millis();
-    doButton3();
-  }
-  else if ((but3read == LOW) && ((millis() - but3LastPress) > buttonPressDelay ))
-   but3LastPress = 0;  // reset
-  
 
 // update LEDs and choose run mode    
   if ((millis() - ledLastUpdate) > ledDelay) {
@@ -222,6 +228,33 @@ else {currentLEDIntensity = 1;  }
 // update the LEDs intensity
 LC1.setIntensity(0,currentLEDIntensity);
 LC2.setIntensity(0,currentLEDIntensity);
+}
+
+void checkButtons()  {
+  int but1read = digitalRead(BUT1);
+  int but2read = digitalRead(BUT2);
+  int but3read = digitalRead(BUT3);
+
+  if ((but1read == HIGH) && ((millis() - but1LastPress) > buttonPressDelay)) {
+    but1LastPress = millis();
+    doButton1();
+  }
+  else if ((but1read == LOW) && ((millis() - but1LastPress) > buttonPressDelay ))
+    but1LastPress = 0;  // reset
+  
+  if ((but2read == HIGH) && ((millis() - but2LastPress) > buttonPressDelay)) {
+    but2LastPress = millis();
+    doButton2();
+  }
+  else if ((but2read == LOW) && ((millis() - but2LastPress) > buttonPressDelay ))
+    but2LastPress = 0;  // reset
+    
+  if ((but3read == HIGH) && ((millis() - but3LastPress) > buttonPressDelay)) {
+    but3LastPress = millis();
+    doButton3();
+  }
+  else if ((but3read == LOW) && ((millis() - but3LastPress) > buttonPressDelay ))
+   but3LastPress = 0;  // reset  
 }
 
 void doButton1() {
@@ -463,517 +496,32 @@ void mode_seconds() {
 
 // MODE TEST: Cycle through individual words and then LEDs
 void mode_test() {
+    
+    unsigned long currentMillis = millis();
+    
+    if (testCase < 114)   {
+          if(currentMillis - previousMillis > pause) {
+              // save the last time you switched cases
+              previousMillis = currentMillis;  
+              // Serial.println(currentMillis);
 
-// Serial.begin(9600);
+              // increment the case number by one, unless it has reached 
+              //the last case, then go back to zero:
+              if (testCase < 113)   {
+              testCase ++; } 
+              else     {
+            testCase = 0;  }
+          }
+        }     
 
-unsigned long currentMillis = millis();
-
-if (testCase < 114)   {
-      if(currentMillis - previousMillis > pause) {
-          // save the last time you switched cases
-          previousMillis = currentMillis;  
-          // Serial.println(currentMillis);
-
-          // increment the case number by one, unless it has reached 
-          //the last case, then go back to zero:
-          if (testCase < 113)   {
-          testCase ++; } 
-          else     {
-        testCase = 0;  }
-      }
-    }     
-
-switch (testCase) { 
-
-case 0:
-  LED_CLEAR();     LC1.setLed(0,0,0,true); 
-break;
-case 1:
-  LED_CLEAR();     LC1.setLed(0,0,1,true); 
-break;
-case 2:
-  LED_CLEAR();     LC1.setLed(0,0,2,true); 
-break;
-case 3:
-  LED_CLEAR();     LC1.setLed(0,0,3,true); 
-break;
-case 4:
-  LED_CLEAR();     LC1.setLed(0,0,4,true); 
-break;
-case 5:
-  LED_CLEAR();     LC1.setLed(0,0,5,true); 
-break;
-case 6:
-  LED_CLEAR();     LC1.setLed(0,0,6,true); 
-break;
-case 7:
-  LED_CLEAR();     LC1.setLed(0,0,7,true); 
-break;
-case 8:
-  LED_CLEAR();     LC1.setLed(0,5,5,true); 
-break;
-case 9:
-  LED_CLEAR();     LC1.setLed(0,6,5,true); 
-break;
-case 10:
-  LED_CLEAR();     LC1.setLed(0,7,5,true); 
-break;
-case 11:
-  LED_CLEAR();     LC1.setLed(0,1,0,true); 
-break;
-case 12:
-  LED_CLEAR();     LC1.setLed(0,1,1,true); 
-break;
-case 13:
-  LED_CLEAR();     LC1.setLed(0,1,2,true); 
-break;
-case 14:
-  LED_CLEAR();     LC1.setLed(0,1,3,true); 
-break;
-case 15:
-  LED_CLEAR();     LC1.setLed(0,1,4,true); 
-break;
-case 16:
-  LED_CLEAR();     LC1.setLed(0,1,5,true); 
-break;
-case 17:
-  LED_CLEAR();     LC1.setLed(0,1,6,true); 
-break;
-case 18:
-  LED_CLEAR();     LC1.setLed(0,1,7,true); 
-break;
-case 19:
-  LED_CLEAR();     LC1.setLed(0,5,4,true); 
-break;
-case 20:
-  LED_CLEAR();     LC1.setLed(0,6,4,true); 
-break;
-case 21:
-  LED_CLEAR();     LC1.setLed(0,7,4,true); 
-break;
-case 22:
-  LED_CLEAR();     LC1.setLed(0,2,0,true); 
-break;
-case 23:
-  LED_CLEAR();     LC1.setLed(0,2,1,true); 
-break;
-case 24:
-  LED_CLEAR();     LC1.setLed(0,2,2,true); 
-break;
-case 25:
-  LED_CLEAR();     LC1.setLed(0,2,3,true); 
-break;
-case 26:
-  LED_CLEAR();     LC1.setLed(0,2,4,true); 
-break;
-case 27:
-  LED_CLEAR();     LC1.setLed(0,2,5,true); 
-break;
-case 28:
-  LED_CLEAR();     LC1.setLed(0,2,6,true); 
-break;
-case 29:
-  LED_CLEAR();     LC1.setLed(0,2,7,true); 
-break;
-case 30:
-  LED_CLEAR();     LC1.setLed(0,5,3,true); 
-break;
-case 31:
-  LED_CLEAR();     LC1.setLed(0,6,3,true); 
-break;
-case 32:
-  LED_CLEAR();     LC1.setLed(0,7,3,true); 
-break;
-case 33:
-  LED_CLEAR();     LC1.setLed(0,3,0,true); 
-break;
-case 34:
-  LED_CLEAR();     LC1.setLed(0,3,1,true); 
-break;
-case 35:
-  LED_CLEAR();     LC1.setLed(0,3,2,true); 
-break;
-case 36:
-  LED_CLEAR();     LC1.setLed(0,3,3,true); 
-break;
-case 37:
-  LED_CLEAR();     LC1.setLed(0,3,4,true); 
-break;
-case 38:
-  LED_CLEAR();     LC1.setLed(0,3,5,true); 
-break;
-case 39:
-  LED_CLEAR();     LC1.setLed(0,3,6,true); 
-break;
-case 40:
-  LED_CLEAR();     LC1.setLed(0,3,7,true); 
-break;
-case 41:
-  LED_CLEAR();     LC1.setLed(0,5,2,true); 
-break;
-case 42:
-  LED_CLEAR();     LC1.setLed(0,6,2,true); 
-break;
-case 43:
-  LED_CLEAR();     LC1.setLed(0,7,2,true); 
-break;
-case 44:
-  LED_CLEAR();     LC1.setLed(0,4,0,true); 
-break;
-case 45:
-  LED_CLEAR();     LC1.setLed(0,4,1,true); 
-break;
-case 46:
-  LED_CLEAR();     LC1.setLed(0,4,2,true); 
-break;
-case 47:
-  LED_CLEAR();     LC1.setLed(0,4,3,true); 
-break;
-case 48:
-  LED_CLEAR();     LC1.setLed(0,4,4,true); 
-break;
-case 49:
-  LED_CLEAR();     LC1.setLed(0,4,5,true); 
-break;
-case 50:
-  LED_CLEAR();     LC1.setLed(0,4,6,true); 
-break;
-case 51:
-  LED_CLEAR();     LC1.setLed(0,4,7,true); 
-break;
-case 52:
-  LED_CLEAR();     LC1.setLed(0,5,1,true); 
-break;
-case 53:
-  LED_CLEAR();     LC1.setLed(0,6,1,true); 
-break;
-case 54:
-  LED_CLEAR();     LC1.setLed(0,7,1,true); 
-break;
-case 55:
-  LED_CLEAR();     LC2.setLed(0,0,0,true); 
-break;
-case 56:
-  LED_CLEAR();     LC2.setLed(0,0,1,true); 
-break;
-case 57:
-  LED_CLEAR();     LC2.setLed(0,0,2,true); 
-break;
-case 58:
-  LED_CLEAR();     LC2.setLed(0,0,3,true); 
-break;
-case 59:
-  LED_CLEAR();     LC2.setLed(0,0,4,true); 
-break;
-case 60:
-  LED_CLEAR();     LC2.setLed(0,0,5,true); 
-break;
-case 61:
-  LED_CLEAR();     LC2.setLed(0,0,6,true); 
-break;
-case 62:
-  LED_CLEAR();     LC2.setLed(0,0,7,true); 
-break;
-case 63:
-  LED_CLEAR();     LC2.setLed(0,5,5,true); 
-break;
-case 64:
-  LED_CLEAR();     LC2.setLed(0,6,5,true); 
-break;
-case 65:
-  LED_CLEAR();     LC2.setLed(0,7,5,true); 
-break;
-case 66:
-  LED_CLEAR();     LC2.setLed(0,1,0,true); 
-break;
-case 67:
-  LED_CLEAR();     LC2.setLed(0,1,1,true); 
-break;
-case 68:
-  LED_CLEAR();     LC2.setLed(0,1,2,true); 
-break;
-case 69:
-  LED_CLEAR();     LC2.setLed(0,1,3,true); 
-break;
-case 70:
-  LED_CLEAR();     LC2.setLed(0,1,4,true); 
-break;
-case 71:
-  LED_CLEAR();     LC2.setLed(0,1,5,true); 
-break;
-case 72:
-  LED_CLEAR();     LC2.setLed(0,1,6,true); 
-break;
-case 73:
-  LED_CLEAR();     LC2.setLed(0,1,7,true); 
-break;
-case 74:
-  LED_CLEAR();     LC2.setLed(0,5,4,true); 
-break;
-case 75:
-  LED_CLEAR();     LC2.setLed(0,6,4,true); 
-break;
-case 76:
-  LED_CLEAR();     LC2.setLed(0,7,4,true); 
-break;
-case 77:
-  LED_CLEAR();     LC2.setLed(0,2,0,true); 
-break;
-case 78:
-  LED_CLEAR();     LC2.setLed(0,2,1,true); 
-break;
-case 79:
-  LED_CLEAR();     LC2.setLed(0,2,2,true); 
-break;
-case 80:
-  LED_CLEAR();     LC2.setLed(0,2,3,true); 
-break;
-case 81:
-  LED_CLEAR();     LC2.setLed(0,2,4,true); 
-break;
-case 82:
-  LED_CLEAR();     LC2.setLed(0,2,5,true); 
-break;
-case 83:
-  LED_CLEAR();     LC2.setLed(0,2,6,true); 
-break;
-case 84:
-  LED_CLEAR();     LC2.setLed(0,2,7,true); 
-break;
-case 85:
-  LED_CLEAR();     LC2.setLed(0,5,3,true); 
-break;
-case 86:
-  LED_CLEAR();     LC2.setLed(0,6,3,true); 
-break;
-case 87:
-  LED_CLEAR();     LC2.setLed(0,7,3,true); 
-break;
-case 88:
-  LED_CLEAR();     LC2.setLed(0,3,0,true); 
-break;
-case 89:
-  LED_CLEAR();     LC2.setLed(0,3,1,true); 
-break;
-case 90:
-  LED_CLEAR();     LC2.setLed(0,3,2,true); 
-break;
-case 91:
-  LED_CLEAR();     LC2.setLed(0,3,3,true); 
-break;
-case 92:
-  LED_CLEAR();     LC2.setLed(0,3,4,true); 
-break;
-case 93:
-  LED_CLEAR();     LC2.setLed(0,3,5,true); 
-break;
-case 94:
-  LED_CLEAR();     LC2.setLed(0,3,6,true); 
-break;
-case 95:
-  LED_CLEAR();     LC2.setLed(0,3,7,true); 
-break;
-case 96:
-  LED_CLEAR();     LC2.setLed(0,5,2,true); 
-break;
-case 97:
-  LED_CLEAR();     LC2.setLed(0,6,2,true); 
-break;
-case 98:
-  LED_CLEAR();     LC2.setLed(0,7,2,true); 
-break;
-case 99:
-  LED_CLEAR();     LC2.setLed(0,4,0,true); 
-break;
-case 100:
-  LED_CLEAR();     LC2.setLed(0,4,1,true); 
-break;
-case 101:
-  LED_CLEAR();     LC2.setLed(0,4,2,true); 
-break;
-case 102:
-  LED_CLEAR();     LC2.setLed(0,4,3,true); 
-break;
-case 103:
-  LED_CLEAR();     LC2.setLed(0,4,4,true); 
-break;
-case 104:
-  LED_CLEAR();     LC2.setLed(0,4,5,true); 
-break;
-case 105:
-  LED_CLEAR();     LC2.setLed(0,4,6,true); 
-break;
-case 106:
-  LED_CLEAR();     LC2.setLed(0,4,7,true); 
-break;
-case 107:
-  LED_CLEAR();     LC2.setLed(0,5,1,true); 
-break;
-case 108:
-  LED_CLEAR();     LC2.setLed(0,6,1,true); 
-break;
-case 109:
-  LED_CLEAR();     LC2.setLed(0,7,1,true); 
-break;
-case 110:
-  LED_CLEAR();     LC1.setLed(0,5,0,true); 
-break;
-case 111:
-  LED_CLEAR();     LC1.setLed(0,5,7,true); 
-break;
-case 112:
-  LED_CLEAR();     LC2.setLed(0,5,7,true); 
-break;
-case 113:
-  LED_CLEAR();     LC2.setLed(0,5,0,true); 
-break;
-/*
-case 114:
-  LED_CLEAR();     W_ITIS();
-break;
-case 115:
-  LED_CLEAR();     M_AQUARTER();
-break;
-case 116:
-  LED_CLEAR();     M_TWENTY();
-break;
-case 117:
-  LED_CLEAR();     M_FIVE();
-break;
-case 118:
-  LED_CLEAR();     M_TWENTYFIVE();
-break;
-case 119:
-  LED_CLEAR();     M_HALF();
-break;
-case 120:
-  LED_CLEAR();     M_TEN();
-break;
-case 121:
-  LED_CLEAR();     W_TO();
-break;
-case 122:
-  LED_CLEAR();     W_PAST();
-break;
-case 123:
-  LED_CLEAR();     H_NINE();
-break;
-case 124:
-  LED_CLEAR();     H_ONE();
-break;
-case 125:
-  LED_CLEAR();     H_SIX();
-break;
-case 126:
-  LED_CLEAR();     H_THREE();
-break;
-case 127:
-  LED_CLEAR();     H_FOUR();
-break;
-case 128:
-  LED_CLEAR();     H_FIVE();
-break;
-case 129:
-  LED_CLEAR();     H_TWO();
-break;
-case 130:
-  LED_CLEAR();     H_EIGHT();
-break;
-case 131:
-  LED_CLEAR();     H_ELEVEN();
-break;
-case 132:
-  LED_CLEAR();     H_SEVEN();
-break;
-case 133:
-  LED_CLEAR();     H_TWELVE();
-break;
-case 134:
-  LED_CLEAR();     H_TEN();
-break;
-case 135:
-  LED_CLEAR();     W_OCLOCK();
-break;
-case 136:
-  LED_CLEAR();     L_ZERO();
-break;
-case 137:
-  LED_CLEAR();     L_ONE();
-break;
-case 138:
-  LED_CLEAR();     L_TWO();
-break;
-case 139:
-  LED_CLEAR();     L_THREE();
-break;
-case 140:
-  LED_CLEAR();     L_FOUR();
-break;
-case 141:
-  LED_CLEAR();     L_FIVE();
-break;
-case 142:
-  LED_CLEAR();     R_ZERO();
-break;
-case 143:
-  LED_CLEAR();     R_ONE();
-break;
-case 144:
-  LED_CLEAR();     R_TWO();
-break;
-case 145:
-  LED_CLEAR();     R_THREE();
-break;
-case 146:
-  LED_CLEAR();     R_FOUR();
-break;
-case 147:
-  LED_CLEAR();     R_FIVE();
-break;
-case 148:
-  LED_CLEAR();     R_SIX();
-break;
-case 149:
-  LED_CLEAR();     R_SEVEN();
-break;
-case 150:
-  LED_CLEAR();     R_EIGHT();
-break;
-case 151:
-  LED_CLEAR();     R_NINE();
-break;
-case 152:
-  LED_CLEAR();     L_ZERO();   R_ZERO();
-break;
-case 153:
-  LED_CLEAR();     L_ZERO();   R_ONE();
-break;
-case 154:
-  LED_CLEAR();     L_ZERO();   R_TWO();
-break;
-case 155:
-  LED_CLEAR();     L_ZERO();   R_THREE();
-break;
-case 156:
-  LED_CLEAR();     L_ZERO();   R_FOUR();
-break;
-case 157:
-  LED_CLEAR();     L_ZERO();   R_FIVE();
-break;
-case 158:
-  LED_CLEAR();     L_ZERO();   R_SIX();
-break;
-case 159:
-  LED_CLEAR();     L_ZERO();   R_SEVEN();
-break;
-case 160:
-  LED_CLEAR();     L_ZERO();   R_EIGHT();
-break;
-case 161:
-  LED_CLEAR();     L_ZERO();   R_NINE();
-break;
-*/
-}
+    switch (testCase) { 
+        case 0:
+          LED_CLEAR();     LC1.setLed(0,0,0,true); 
+        break;
+        case 1:
+          LED_CLEAR();     LC1.setLed(0,0,1,true); 
+        break;
+    }
 }
 
 // MODE LOVE: The face flashes between "Mike & Em" and a Heart shape

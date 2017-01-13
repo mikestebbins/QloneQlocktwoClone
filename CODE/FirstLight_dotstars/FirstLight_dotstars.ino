@@ -10,15 +10,16 @@
 // Move a white dot along the strip of leds.  This program simply shows how to configure the leds,
 // and then how to turn a single pixel white and then off, moving down the line of pixels.
 // 
+#define BRIGHTNESS 32 // (0-255)
 
 // How many leds are in the strip?
-#define NUM_LEDS 11
+#define NUM_LEDS 114
 
 // Data pin that led data will be written out over
-#define DATA_PIN 11
+#define DATA_PIN 14
 
 // Clock pin only needed for SPI based chipsets when not using hardware SPI
-//#define CLOCK_PIN 13
+#define CLOCK_PIN 11
 
 // This is an array of leds.  One item for each led in your strip.
 CRGB leds[NUM_LEDS];
@@ -66,11 +67,13 @@ void loop() {
       // Turn our current led on to white, then show the leds
       leds[whiteLed] = CRGB::White;
 
+      FastLED.setBrightness(BRIGHTNESS);
+
       // Show the leds (only one of which is set to white, from above)
       FastLED.show();
 
       // Wait a little bit
-      delay(1000);
+      delay(200);
 
       // Turn our current led back to black for the next loop around
       leds[whiteLed] = CRGB::Black;
@@ -80,11 +83,14 @@ void loop() {
       // Turn our current led on to white, then show the leds
       leds[whiteLed] = CRGB::White;
    }
+    
+    FastLED.setBrightness(BRIGHTNESS);
+    
     // Show the leds (only one of which is set to white, from above)
     FastLED.show();
 
     // Wait a little bit
-    delay(1000);
+    delay(200);
 
    for(int whiteLed = 0; whiteLed < NUM_LEDS; whiteLed++) {
       // Turn our current led on to white, then show the leds
@@ -96,9 +102,12 @@ void loop() {
   // using "video" scaling, meaning: never fading to full black
     leds[whiteLed].fadeToBlackBy( 64 );
     
-   }  
+   }
+
+    FastLED.setBrightness(BRIGHTNESS);
+    
     // Show the leds (only one of which is set to white, from above)
     FastLED.show();
-    delay(2000);
+    delay(500);
 
 }
