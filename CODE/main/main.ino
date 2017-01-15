@@ -5,8 +5,7 @@
 #include <Adafruit_DotStar.h>
 #include <SPI.h>
 
-// #define ROWS 10
-// #define COLUMNS 11
+#define COLUMNS 11
 #define NUMLEDS 114
 
 #define DATAPIN    11
@@ -26,10 +25,9 @@ uint8_t brightLevels[] = {0x00,0x00,0x00,0x00,0x00,0x01,0x01,0x01,
                               0x89,0x96,0xA4,0xB3,0xC4,0xD6,0xE9,0xFF};
 
 int frameDelay = 10;         // (milliseconds), time between transition screens
-int nowBrightnessIndex = 63;  // (0-63), index for lookup table array above
-int transitionUpIndex = 0;
-int transitionDownIndex = 0;
-
+int nowBrightIndex = 63;  // (0-63), index for lookup table array above
+int transUpBrightIndex = 0;
+int transDownBrightIndex = 0;
 bool transitioningNow = false; // track if we are still going to transition
 
 bool currentScreen[NUMLEDS]; // which pixels are lit up right now
@@ -42,6 +40,10 @@ bool goingDown[NUMLEDS];     // tracks pixels transitioning to zero
 uint8_t currentScreenLevel[NUMLEDS];
 uint8_t nextScreenLevel[NUMLEDS];
 
+//-------------------------------------------------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------------------------------------------------
+// Following are all of the different screens. Generated with Excel sheet in project folder.
 bool screenITIS[NUMLEDS] =
   {1,1,0,1,1,0,0,0,0,0,0,           //  {I,T,_,I,S,_,_,_,_,_,_,
    0,0,0,0,0,0,0,0,0,0,0,           //   _,_,_,_,_,_,_,_,_,_,_,
@@ -622,28 +624,38 @@ void printArray(bool theArray[], int sizeOfArray)  {
 
 void printArrayByte(uint8_t theArray[], int sizeOfArray)  {
   for (int i = 0; i < sizeOfArray; i++)  {
-    Serial.print(theArray[i],HEX);
-    Serial.print(" ");
+    PrintHex8(theArray,sizeOfArray);
   }
   Serial.println();
+}
+
+// from: https://forum.arduino.cc/index.php?topic=38107.0
+void PrintHex8(uint8_t *data, uint8_t length)  { // prints 8-bit data in hex with leading zeroes
+  for (int i=0; i<length; i++) { 
+    if (data[i]<0x10) {
+      Serial.print("0");
+    }
+    Serial.print(data[i],HEX);
+    Serial.print(" "); 
+    }
 }
 
 void setNextScreenLevels()  {
 
   // set the transition indices to their starting points for the tranisitions
-  transitionDownIndex = nowBrightnessIndex;
-  transitionUpIndex = 0;
+  transDownBrightIndex = nowBrightIndex;
+  transUpBrightIndex = 0;
   
   while (transitioningNow == true)  {
     for (int i = 0; i < NUMLEDS; i++)  {
       if (stayingOn[i] == true)  {
-        currentScreenLevel[i] = brightLevels[nowBrightnessIndex];   
+        currentScreenLevel[i] = brightLevels[nowBrightIndex];   
       }
       else if (goingUp[i] == true)  {
-        currentScreenLevel[i] = brightLevels[transitionUpIndex];
+        currentScreenLevel[i] = brightLevels[transUpBrightIndex];
         }
       else if (goingDown[i] == true)  {
-        currentScreenLevel[i] = brightLevels[transitionDownIndex];
+        currentScreenLevel[i] = brightLevels[transDownBrightIndex];
       }
       else  {
         currentScreenLevel[i] = 0x00;
@@ -651,12 +663,12 @@ void setNextScreenLevels()  {
     }
     
     // update the transition counters unless they've reached the end of transitioning
-    if (transitionUpIndex == nowBrightnessIndex)  {
+    if (transUpBrightIndex == nowBrightIndex)  {
       transitioningNow = false;
       }
     else { 
-      transitionUpIndex++; 
-      transitionDownIndex--;
+      transUpBrightIndex++; 
+      transDownBrightIndex--;
       }
 
     lightUpLEDs();
@@ -666,20 +678,6 @@ void setNextScreenLevels()  {
     delay(frameDelay);                  
   }
 }
-
-//------------------------------------------------------------------------------
-//------------------------------------------------------------------------------
-//------------------------------------------------------------------------------
-
-void setup() {
-  Serial.begin(9600);
-  strip.begin(); // Initialize pins for output
-  strip.show();  // Turn all LEDs off ASAP
-}
-
-//------------------------------------------------------------------------------
-//------------------------------------------------------------------------------
-//------------------------------------------------------------------------------
 
 void lightUpLEDs()  {
   // takes care of the LED strips being wired in "S"-shaped chain
@@ -696,7 +694,7 @@ void lightUpLEDs()  {
       j++;
     }
     
-    if (i%11 == 10)  {
+    if (i%COLUMNS == (COLUMNS-1))  {
       reversed = !reversed;
       j = 0;
     }    
@@ -704,36 +702,41 @@ void lightUpLEDs()  {
   strip.show();
 }
 
-//------------------------------------------------------------------------------
-//------------------------------------------------------------------------------
-//------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------------------------------------------------
+
+void setup() {
+  Serial.begin(115200);
+  strip.begin(); // Initialize pins for output
+  strip.show();  // Turn all LEDs off ASAP
+
+  zeroOutArray(currentScreen,NUMLEDS);
+
+}
+
+
+//-------------------------------------------------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------------------------------------------------
 
 void loop() {
-  zeroOutArray(currentScreen,NUMLEDS);
-  Serial.println("zeroed currentScreen");
-  printArray(currentScreen,NUMLEDS);
-
   zeroOutArray(nextScreen,NUMLEDS);
-  Serial.println("zeroed nextScreen");
-  printArray(nextScreen,NUMLEDS);
-
   // create temp array to hold the OR combined result
   bool tempCompiled[NUMLEDS];
+  zeroOutArray(tempCompiled,NUMLEDS);
 
+  bool inputMatrix[5][NUMLEDS] = {{tempCompiled},{screenITIS},{screen5},{screenTO},{screenHOUR12}};
+
+  for (int i = 0; i < sizeof(inputMatrix)-1; i++)  {
+    combineArrays(inputMatrix[0], inputMatrix[i+1], &tempCompiled[0], NUMLEDS);
+  }
   
-  // TEST: build up IT IS FIVE TO TWELVE as current screen
-  combineArrays(screenITIS, screen5, &tempCompiled[0], NUMLEDS);
-  Serial.println("a");
-  printArray(tempCompiled,NUMLEDS);
-
-  combineArrays(tempCompiled, screenTO, &tempCompiled[0], NUMLEDS);
-  Serial.println("b");
-  printArray(tempCompiled,NUMLEDS);
-
-  combineArrays(tempCompiled, screenHOUR12, &tempCompiled[0], NUMLEDS);
-  Serial.println("c");
-  printArray(tempCompiled,NUMLEDS);
-
+  // // TEST: build up IT IS FIVE TO TWELVE as current screen
+  // combineArrays(tempCompiled, screenITIS, &tempCompiled[0], NUMLEDS);
+  // combineArrays(tempCompiled, screen5, &tempCompiled[0], NUMLEDS);
+  // combineArrays(tempCompiled, screenTO, &tempCompiled[0], NUMLEDS);
+  // combineArrays(tempCompiled, screenHOUR12, &tempCompiled[0], NUMLEDS);
 
   memcpy(nextScreen, tempCompiled, NUMLEDS);
 
@@ -765,16 +768,12 @@ void loop() {
   printArray(currentScreen,NUMLEDS);
 
 // TEST: build up IT IS ONE OCLOCK as next screen
-  combineArrays(screenITIS, screenHOUR1, &tempCompiled[0], NUMLEDS);
-  Serial.println("d");
-  printArray(tempCompiled,NUMLEDS);
-
+  zeroOutArray(tempCompiled,NUMLEDS);
+  combineArrays(tempCompiled, screenITIS, &tempCompiled[0], NUMLEDS);
+  combineArrays(tempCompiled, screenHOUR1, &tempCompiled[0], NUMLEDS);
   combineArrays(tempCompiled, screenOCLOCK, &tempCompiled[0], NUMLEDS);
-  Serial.println("e");
-  printArray(tempCompiled,NUMLEDS);
-
   memcpy(nextScreen, tempCompiled, NUMLEDS);
-  Serial.println("nextScreen is now IT IS ONE OCLOCK");
+
   printArray(nextScreen,NUMLEDS);
 
   // Compare nextscreen to currentscreen and build transition matrices
@@ -798,9 +797,9 @@ void loop() {
 
     setNextScreenLevels();          
 
-  //------------------------------------------------------------------------------
+  //-------------------------------------------------------------------------------------------------------------------------
   // HERE IS WHERE I AM AT
-  //------------------------------------------------------------------------------
+  //-------------------------------------------------------------------------------------------------------------------------
 
   // TODO: LIGHT UP SOME LEDS test
   // THEN WORRY ABOUT IMPLEMENTING ALL "SCREENS" FOR TIME AND TIME CODE: EASY WIN
