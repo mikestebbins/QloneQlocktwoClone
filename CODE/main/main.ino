@@ -4,9 +4,12 @@
 
 #include <Adafruit_DotStar.h>
 #include <SPI.h>
+#include <TimeLib.h>
 
 #define COLUMNS 11
 #define NUMLEDS 114
+
+#define DEFAULTTIME 1483228800 // seconds since epoch as of 1/1/17 00:00:00
 
 #define DATAPIN    11
 #define CLOCKPIN   10
@@ -702,6 +705,43 @@ void lightUpLEDs()  {
   strip.show();
 }
 
+void digitalClockDisplay() {
+  // digital clock display of the time
+  Serial.print(hour());
+  printDigits(minute());
+  printDigits(second());
+  Serial.print(" ");
+  Serial.print(day());
+  Serial.print(" ");
+  Serial.print(month());
+  Serial.print(" ");
+  Serial.print(year()); 
+  Serial.println(); 
+}
+
+void printDigits(int digits) {
+  // utility function for digital clock display: prints preceding colon and leading 0
+  Serial.print(":");
+  if(digits < 10)
+    Serial.print('0');
+  Serial.print(digits);
+}
+
+// adds one minute to the time and resets seconds to zero
+void addOneMinute()  {
+  digitalClockDisplay();
+  int temp = now()%60;  
+  adjustTime(60-temp);
+  digitalClockDisplay();
+}
+
+// adds one hour to the time
+void addOneHour()  {
+  digitalClockDisplay();
+  adjustTime(3600);
+  digitalClockDisplay();
+}
+
 //-------------------------------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------------------------------
@@ -711,8 +751,9 @@ void setup() {
   strip.begin(); // Initialize pins for output
   strip.show();  // Turn all LEDs off ASAP
 
-  zeroOutArray(currentScreen,NUMLEDS);
+  adjustTime(DEFAULTTIME);
 
+  zeroOutArray(currentScreen,NUMLEDS);
 }
 
 
