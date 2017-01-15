@@ -3,10 +3,11 @@
  * example code illustrating Time library with Real Time Clock.
  * 
  */
-
 #include <TimeLib.h>
 
+int counter = 0;
 #define DEFAULTTIME 1483228800 // seconds since epoch as of 1/1/17 00:00:00
+
 
 void setup()  {
   // set the Time library to use Teensy 3.0's RTC to keep time
@@ -14,6 +15,7 @@ void setup()  {
 //  setSyncInterval(60);
 
   Serial.begin(115200);
+
   while (!Serial);  // Wait for Arduino Serial Monitor to open
   delay(100);
   if (timeStatus()!= timeSet) {
@@ -25,6 +27,7 @@ void setup()  {
 }
 
 void loop() {
+  counter++;  
 //  if (Serial.available()) {
 //    time_t t = processSyncMessage();
 //    if (t != 0) {
@@ -34,7 +37,11 @@ void loop() {
 //  }
 //  digitalClockDisplay();  
 //  Serial.println(now());
-  adjustTime(3600);
+  if (counter%5 == 0)  {
+    int temp = now()%60;  
+    adjustTime(3600-temp);
+  }
+
   digitalClockDisplay();
   Serial.println(now());
   delay(1000);
