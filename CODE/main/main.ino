@@ -25,14 +25,11 @@ uint8_t brightLevels[] = {0x00,0x00,0x00,0x00,0x00,0x01,0x01,0x01,
                               0x43,0x4A,0x51,0x58,0x60,0x69,0x73,0x7E,
                               0x89,0x96,0xA4,0xB3,0xC4,0xD6,0xE9,0xFF};
 
-int frameDelay = 2;         // (milliseconds), time between transition screens
-//uint32_t color = 0xFF0000; // 'On' color, full brightness, from strandtest code
-int currentBrightness = 63;  // must be between 0 and 63 for lookup table above
-int transitionUpLevel = 0;
-int transitionDownLevel = 0;
+int frameDelay = 10;         // (milliseconds), time between transition screens
+int nowBrightnessIndex = 63;  // (0-63), index for lookup table array above
+int transitionUpIndex = 0;
+int transitionDownIndex = 0;
 
-int goingUpCounter = 0;      // which array position are the up pixels currently at
-int goingDownCounter = 0;    // which array position are the down pixels currently at
 bool transitioningNow = false; // track if we are still going to transition
 
 bool currentScreen[NUMLEDS]; // which pixels are lit up right now
@@ -793,19 +790,19 @@ void printArrayByte(uint8_t theArray[], int sizeOfArray)  {
 void setNextScreenLevels()  {
 
   // set the transition indices to their starting points for the tranisitions
-  transitionDownLevel = currentBrightness;
-  transitionUpLevel = 0;
+  transitionDownIndex = nowBrightnessIndex;
+  transitionUpIndex = 0;
   
   while (transitioningNow == true)  {
     for (int i = 0; i < NUMLEDS; i++)  {
       if (stayingOn[i] == true)  {
-        currentScreenLevel[i] = brightLevels[currentBrightness];   
+        currentScreenLevel[i] = brightLevels[nowBrightnessIndex];   
       }
       else if (goingUp[i] == true)  {
-        currentScreenLevel[i] = brightLevels[transitionUpLevel];
+        currentScreenLevel[i] = brightLevels[transitionUpIndex];
         }
       else if (goingDown[i] == true)  {
-        currentScreenLevel[i] = brightLevels[transitionDownLevel];
+        currentScreenLevel[i] = brightLevels[transitionDownIndex];
       }
       else  {
         currentScreenLevel[i] = 0x00;
@@ -813,12 +810,12 @@ void setNextScreenLevels()  {
     }
     
     // update the transition counters unless they've reached the end of transitioning
-    if (transitionUpLevel == currentBrightness)  {
+    if (transitionUpIndex == nowBrightnessIndex)  {
       transitioningNow = false;
       }
     else { 
-      transitionUpLevel++; 
-      transitionDownLevel--;
+      transitionUpIndex++; 
+      transitionDownIndex--;
       }
 
     lightUpLEDs();
