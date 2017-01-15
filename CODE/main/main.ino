@@ -3,7 +3,7 @@
 //   jump around in the middle of transitions or flicker in general
 
 #include <Adafruit_DotStar.h>
-#include <SPI.h>         // COMMENT OUT THIS LINE FOR GEMMA OR TRINKET
+#include <SPI.h>
 
 // #define ROWS 10
 // #define COLUMNS 11
@@ -583,22 +583,89 @@ bool screenHEARTLINE[NUMLEDS] =
    0,0,0,0,1,0,1,0,0,0,0,           //   _,_,_,_,N,_,W,_,_,_,_,
    0,0,0,0,0,1,0,0,0,0,0,0,0,0,0};  //   _,_,_,_,_,O,_,_,_,_,_,_,_,_,_}
 
+//--------------------------------------------------------------------------------------
+// FUNCTIONS ---------------------------------------------------------------------------
+//--------------------------------------------------------------------------------------
 
-// bool TEST_A[NUMLEDS] =
-//   {1,0,0,           
-//    0,0,0};  
+void zeroOutArray(bool theArray[], int sizeOfArray)  {
+  for (int i = 0; i < sizeOfArray; i++)  {
+    theArray[i] = 0;
+    }
+}
 
-// bool TEST_B[NUMLEDS] =
-//   {0,0,1,    
-//    0,0,0};
+void combineArrays(bool arrayA[], bool arrayB[], bool *parrayC, int sizeOfArray)  {
+  // create temp arrays to be OR'd together
+  bool tempAdditionA[sizeOfArray];
+  bool tempAdditionB[sizeOfArray];
 
-// bool TEST_C[NUMLEDS] =
-//   {0,0,0,         
-//    0,1,0}; 
+  // copy the first and second arrays to OR together into temp arrays
+  memcpy(tempAdditionA, arrayA, sizeOfArray);
+  memcpy(tempAdditionB, arrayB, sizeOfArray);
 
-// bool TEST_D[NUMLEDS] =
-//   {1,0,0,          
-//    1,0,1}; 
+  for (int i = 0; i < sizeOfArray; i++)  {
+    if ((tempAdditionA[i] == 1) || (tempAdditionB[i] == 1))  {
+      parrayC[i] = 1;      
+    }
+    else  {
+      parrayC[i] = 0;
+    }
+  }
+}
+
+void printArray(bool theArray[], int sizeOfArray)  {
+  for (int i = 0; i < sizeOfArray; i++)  {
+    Serial.print(theArray[i]);
+    Serial.print(" ");
+  }
+  Serial.println();
+}
+
+void printArrayByte(uint8_t theArray[], int sizeOfArray)  {
+  for (int i = 0; i < sizeOfArray; i++)  {
+    Serial.print(theArray[i],HEX);
+    Serial.print(" ");
+  }
+  Serial.println();
+}
+
+void setNextScreenLevels()  {
+
+  // set the transition indices to their starting points for the tranisitions
+  transitionDownIndex = nowBrightnessIndex;
+  transitionUpIndex = 0;
+  
+  while (transitioningNow == true)  {
+    for (int i = 0; i < NUMLEDS; i++)  {
+      if (stayingOn[i] == true)  {
+        currentScreenLevel[i] = brightLevels[nowBrightnessIndex];   
+      }
+      else if (goingUp[i] == true)  {
+        currentScreenLevel[i] = brightLevels[transitionUpIndex];
+        }
+      else if (goingDown[i] == true)  {
+        currentScreenLevel[i] = brightLevels[transitionDownIndex];
+      }
+      else  {
+        currentScreenLevel[i] = 0x00;
+      }
+    }
+    
+    // update the transition counters unless they've reached the end of transitioning
+    if (transitionUpIndex == nowBrightnessIndex)  {
+      transitioningNow = false;
+      }
+    else { 
+      transitionUpIndex++; 
+      transitionDownIndex--;
+      }
+
+    lightUpLEDs();
+    printArrayByte(currentScreenLevel,NUMLEDS);
+    
+    // delay for 1 frame duration
+    delay(frameDelay);                  
+  }
+}
 
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
@@ -740,88 +807,4 @@ void loop() {
 
   Serial.println("--------------------------------");
   delay(3000);
-}
-
-//--------------------------------------------------------------------------------------
-// FUNCTIONS ---------------------------------------------------------------------------
-//--------------------------------------------------------------------------------------
-
-void zeroOutArray(bool theArray[], int sizeOfArray)  {
-  for (int i = 0; i < sizeOfArray; i++)  {
-    theArray[i] = 0;
-    }
-}
-
-void combineArrays(bool arrayA[], bool arrayB[], bool *parrayC, int sizeOfArray)  {
-  // create temp arrays to be OR'd together
-  bool tempAdditionA[sizeOfArray];
-  bool tempAdditionB[sizeOfArray];
-
-  // copy the first and second arrays to OR together into temp arrays
-  memcpy(tempAdditionA, arrayA, sizeOfArray);
-  memcpy(tempAdditionB, arrayB, sizeOfArray);
-
-  for (int i = 0; i < sizeOfArray; i++)  {
-    if ((tempAdditionA[i] == 1) || (tempAdditionB[i] == 1))  {
-      parrayC[i] = 1;      
-    }
-    else  {
-      parrayC[i] = 0;
-    }
-  }
-}
-
-void printArray(bool theArray[], int sizeOfArray)  {
-  for (int i = 0; i < sizeOfArray; i++)  {
-    Serial.print(theArray[i]);
-    Serial.print(" ");
-  }
-  Serial.println();
-}
-
-void printArrayByte(uint8_t theArray[], int sizeOfArray)  {
-  for (int i = 0; i < sizeOfArray; i++)  {
-    Serial.print(theArray[i],HEX);
-    Serial.print(" ");
-  }
-  Serial.println();
-}
-
-void setNextScreenLevels()  {
-
-  // set the transition indices to their starting points for the tranisitions
-  transitionDownIndex = nowBrightnessIndex;
-  transitionUpIndex = 0;
-  
-  while (transitioningNow == true)  {
-    for (int i = 0; i < NUMLEDS; i++)  {
-      if (stayingOn[i] == true)  {
-        currentScreenLevel[i] = brightLevels[nowBrightnessIndex];   
-      }
-      else if (goingUp[i] == true)  {
-        currentScreenLevel[i] = brightLevels[transitionUpIndex];
-        }
-      else if (goingDown[i] == true)  {
-        currentScreenLevel[i] = brightLevels[transitionDownIndex];
-      }
-      else  {
-        currentScreenLevel[i] = 0x00;
-      }
-    }
-    
-    // update the transition counters unless they've reached the end of transitioning
-    if (transitionUpIndex == nowBrightnessIndex)  {
-      transitioningNow = false;
-      }
-    else { 
-      transitionUpIndex++; 
-      transitionDownIndex--;
-      }
-
-    lightUpLEDs();
-    printArrayByte(currentScreenLevel,NUMLEDS);
-    
-    // delay for 1 frame duration
-    delay(frameDelay);                  
-  }
 }
