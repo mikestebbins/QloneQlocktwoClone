@@ -135,7 +135,8 @@ void loop() {
       currentlyTransitioning = true; }
     else  { goingDown[i] = false; }
   }
-  
+
+  Serial.println("currentScreenLevel:"); 
   // set the transition indices to their starting points for the tranisitions
   transitionDownLevel = currentBrightness;
   transitionUpLevel = 0;
@@ -170,12 +171,11 @@ void loop() {
         strip.setPixelColor(i, currentScreenLevel[i]);
     }
     strip.show();  
-    
-    Serial.println("currentScreenLevel:");   
+     
     printArrayByte(currentScreenLevel,NUMPIXELS);
     
     // delay for 1 frame duration
-    delay(50);                  
+    delay(10);                  
   }
 
   //------------------------------------------------------------------------------
