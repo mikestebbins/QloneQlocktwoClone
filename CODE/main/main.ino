@@ -733,7 +733,7 @@ void setNextScreenLevels()  {
       }
 
     lightUpLEDs();
-    printArrayByte(currentScreenLevel,NUMLEDS);
+    // printArrayByte(currentScreenLevel,NUMLEDS);
     
     // delay for 1 frame duration
     delay(frameDelay);                  
