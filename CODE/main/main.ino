@@ -13,6 +13,13 @@
 
 #define DATAPIN    11
 #define CLOCKPIN   10
+
+// CHECK OR UPDATE
+#define BUT3 8   // minute++
+#define BUT2 7   // hour++
+#define BUT1 9  // change mode++
+#define PHOTOCELLPIN = 0; // the cell and 10K pulldown are connected to A0
+
 Adafruit_DotStar strip = Adafruit_DotStar(
   NUMLEDS, DATAPIN, CLOCKPIN, DOTSTAR_BRG);
 
@@ -40,8 +47,13 @@ bool stayingOff[NUMLEDS];    // tracks pixels staying at zero
 bool goingUp[NUMLEDS];       // tracks pixels transitioning to current brightness
 bool goingDown[NUMLEDS];     // tracks pixels transitioning to zero
 
-uint8_t currentScreenLevel[NUMLEDS];
+uint8_t currentScreenLevel[NUMLEDS]; // one byte values for each of current screen
 uint8_t nextScreenLevel[NUMLEDS];
+
+int cHour;
+int cMin;
+int cSec;
+bool forceUpdate = true;
 
 //-------------------------------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------------------------------
@@ -311,6 +323,53 @@ bool screenOCLOCK[NUMLEDS] =
    0,0,0,0,0,0,0,0,0,0,0,           //   _,_,_,_,_,_,_,_,_,_,_,
    0,0,0,0,0,1,1,1,1,1,1,0,0,0,0};  //   _,_,_,_,_,O,C,L,O,C,K_,_,_,_,_}}
 
+bool screenMIN1[NUMLEDS] =
+  {0,0,0,0,0,0,0,0,0,0,0,           //  {_,_,_,_,_,_,_,_,_,_,_,
+   0,0,0,0,0,0,0,0,0,0,0,           //   _,_,_,_,_,_,_,_,_,_,_,
+   0,0,0,0,0,0,0,0,0,0,0,           //   _,_,_,_,_,_,_,_,_,_,_,
+   0,0,0,0,0,0,0,0,0,0,0,           //   _,_,_,_,_,_,_,_,_,_,_,
+   0,0,0,0,0,0,0,0,0,0,0,           //   _,_,_,_,_,_,_,_,_,_,_,
+   0,0,0,0,0,0,0,0,0,0,0,           //   _,_,_,_,_,_,_,_,_,_,_,
+   0,0,0,0,0,0,0,0,0,0,0,           //   _,_,_,_,_,_,_,_,_,_,_,
+   0,0,0,0,0,0,0,0,0,0,0,           //   _,_,_,_,_,_,_,_,_,_,_,
+   0,0,0,0,0,0,0,0,0,0,0,           //   _,_,_,_,_,_,_,_,_,_,_,
+   0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};  //   _,_,_,_,_,_,_,_,_,_,_,.,_,_,_}
+
+bool screenMIN2[NUMLEDS] =
+  {0,0,0,0,0,0,0,0,0,0,0,           //  {_,_,_,_,_,_,_,_,_,_,_,
+   0,0,0,0,0,0,0,0,0,0,0,           //   _,_,_,_,_,_,_,_,_,_,_,
+   0,0,0,0,0,0,0,0,0,0,0,           //   _,_,_,_,_,_,_,_,_,_,_,
+   0,0,0,0,0,0,0,0,0,0,0,           //   _,_,_,_,_,_,_,_,_,_,_,
+   0,0,0,0,0,0,0,0,0,0,0,           //   _,_,_,_,_,_,_,_,_,_,_,
+   0,0,0,0,0,0,0,0,0,0,0,           //   _,_,_,_,_,_,_,_,_,_,_,
+   0,0,0,0,0,0,0,0,0,0,0,           //   _,_,_,_,_,_,_,_,_,_,_,
+   0,0,0,0,0,0,0,0,0,0,0,           //   _,_,_,_,_,_,_,_,_,_,_,
+   0,0,0,0,0,0,0,0,0,0,0,           //   _,_,_,_,_,_,_,_,_,_,_,
+   0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};  //   _,_,_,_,_,_,_,_,_,_,_,_,.,_,_}
+
+bool screenMIN3[NUMLEDS] =
+  {0,0,0,0,0,0,0,0,0,0,0,           //  {_,_,_,_,_,_,_,_,_,_,_,
+   0,0,0,0,0,0,0,0,0,0,0,           //   _,_,_,_,_,_,_,_,_,_,_,
+   0,0,0,0,0,0,0,0,0,0,0,           //   _,_,_,_,_,_,_,_,_,_,_,
+   0,0,0,0,0,0,0,0,0,0,0,           //   _,_,_,_,_,_,_,_,_,_,_,
+   0,0,0,0,0,0,0,0,0,0,0,           //   _,_,_,_,_,_,_,_,_,_,_,
+   0,0,0,0,0,0,0,0,0,0,0,           //   _,_,_,_,_,_,_,_,_,_,_,
+   0,0,0,0,0,0,0,0,0,0,0,           //   _,_,_,_,_,_,_,_,_,_,_,
+   0,0,0,0,0,0,0,0,0,0,0,           //   _,_,_,_,_,_,_,_,_,_,_,
+   0,0,0,0,0,0,0,0,0,0,0,           //   _,_,_,_,_,_,_,_,_,_,_,
+   0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};  //   _,_,_,_,_,_,_,_,_,_,_,_,_,.,_}
+
+bool screenMIN4[NUMLEDS] =
+  {0,0,0,0,0,0,0,0,0,0,0,           //  {_,_,_,_,_,_,_,_,_,_,_,
+   0,0,0,0,0,0,0,0,0,0,0,           //   _,_,_,_,_,_,_,_,_,_,_,
+   0,0,0,0,0,0,0,0,0,0,0,           //   _,_,_,_,_,_,_,_,_,_,_,
+   0,0,0,0,0,0,0,0,0,0,0,           //   _,_,_,_,_,_,_,_,_,_,_,
+   0,0,0,0,0,0,0,0,0,0,0,           //   _,_,_,_,_,_,_,_,_,_,_,
+   0,0,0,0,0,0,0,0,0,0,0,           //   _,_,_,_,_,_,_,_,_,_,_,
+   0,0,0,0,0,0,0,0,0,0,0,           //   _,_,_,_,_,_,_,_,_,_,_,
+   0,0,0,0,0,0,0,0,0,0,0,           //   _,_,_,_,_,_,_,_,_,_,_,
+   0,0,0,0,0,0,0,0,0,0,0,           //   _,_,_,_,_,_,_,_,_,_,_,
+   0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};  //   _,_,_,_,_,_,_,_,_,_,_,_,_,_,.}   
 
 bool screenNUMLH0[NUMLEDS] =
   {0,0,0,0,0,0,0,0,0,0,0,           //  {_,_,_,_,_,_,_,_,_,_,_,
@@ -644,7 +703,6 @@ void PrintHex8(uint8_t *data, uint8_t length)  { // prints 8-bit data in hex wit
 }
 
 void setNextScreenLevels()  {
-
   // set the transition indices to their starting points for the tranisitions
   transDownBrightIndex = nowBrightIndex;
   transUpBrightIndex = 0;
@@ -751,6 +809,11 @@ void setup() {
   strip.begin(); // Initialize pins for output
   strip.show();  // Turn all LEDs off ASAP
 
+  //CHECK OR UPDATE
+  pinMode (BUT1, INPUT);
+  pinMode (BUT2, INPUT);
+  pinMode (BUT3, INPUT);  
+
   adjustTime(DEFAULTTIME);
 
   zeroOutArray(currentScreen,NUMLEDS);
@@ -762,25 +825,149 @@ void setup() {
 //-------------------------------------------------------------------------------------------------------------------------
 
 void loop() {
-  zeroOutArray(nextScreen,NUMLEDS);
+
+  int currentHour = hour();
+  int currentMin  = minute();
+  int currentSec  = second();
+
+  if ((currentHour == cHour) && (currentMin == cMin) && (forceUpdate == false))  {
+    return;
+  }
+
+  int tpast5mins = currentMin % 5; // remainder
+  int t5mins = currentMin - tpast5mins;
+  int tHour = currentHour;
+   
+  if (tHour > 12) {
+    tHour = tHour - 12;
+  }
+  else if (tHour == 0)  {
+    tHour = 12;
+  }
+
   // create temp array to hold the OR combined result
   bool tempCompiled[NUMLEDS];
+
+  zeroOutArray(nextScreen,NUMLEDS);
   zeroOutArray(tempCompiled,NUMLEDS);
 
-  bool inputMatrix[5][NUMLEDS] = {{tempCompiled},{screenITIS},{screen5},{screenTO},{screenHOUR12}};
+  // bool inputMatrix[5][NUMLEDS] = {{tempCompiled},{screenITIS},{screen5},{screenTO},{screenHOUR12}};
 
-  for (int i = 0; i < sizeof(inputMatrix)-1; i++)  {
-    combineArrays(inputMatrix[0], inputMatrix[i+1], &tempCompiled[0], NUMLEDS);
+  // for (int i = 0; i < sizeof(inputMatrix)-1; i++)  {
+  //   combineArrays(inputMatrix[0], inputMatrix[i+1], &tempCompiled[0], NUMLEDS);
+  // }
+  
+  combineArrays(tempCompiled, screenITIS, &tempCompiled[0], NUMLEDS);
+  
+   if (t5mins == 5 || t5mins == 55)  {
+       combineArrays(tempCompiled, screen5, &tempCompiled[0], NUMLEDS);  // 5 past or 5 to..
+     }
+   else if (t5mins == 10 || t5mins == 50)  {
+       combineArrays(tempCompiled, screen10, &tempCompiled[0], NUMLEDS);  // 10 past or 10 to..
+     }  
+   else if (t5mins == 15 || t5mins == 45)  {
+       combineArrays(tempCompiled, screen15, &tempCompiled[0], NUMLEDS);  // ..etc.
+     }
+   else if (t5mins == 20 || t5mins == 40)  {
+       combineArrays(tempCompiled, screen20, &tempCompiled[0], NUMLEDS);
+     }
+   else if (t5mins == 25 || t5mins == 35)  {
+       combineArrays(tempCompiled, screen25, &tempCompiled[0], NUMLEDS);
+     }
+   else if (t5mins == 30)  {
+       combineArrays(tempCompiled, screen30, &tempCompiled[0], NUMLEDS);
+     }
+
+   // past or to or o'clock?
+   if (t5mins == 0)  {
+       combineArrays(tempCompiled, screenOCLOCK, &tempCompiled[0], NUMLEDS);
+     }
+   else if (t5mins > 30)  {
+       combineArrays(tempCompiled, screenTO, &tempCompiled[0], NUMLEDS);
+     }
+   else  {
+       combineArrays(tempCompiled, screenPAST, &tempCompiled[0], NUMLEDS);
+     }
+   
+   if (t5mins > 30) {
+    tHour = tHour+1;
+    if (tHour > 12) tHour = 1;
+   }
+
+   // light up the hour word
+   if (tHour == 1)  {
+       combineArrays(tempCompiled, screenHOUR1, &tempCompiled[0], NUMLEDS);
+     } 
+   else if (tHour == 2)  {
+       combineArrays(tempCompiled, screenHOUR2, &tempCompiled[0], NUMLEDS);
+     }
+   else if (tHour == 3)  {
+       combineArrays(tempCompiled, screenHOUR3, &tempCompiled[0], NUMLEDS);
+     } 
+   else if (tHour == 4)  {
+       combineArrays(tempCompiled, screenHOUR4, &tempCompiled[0], NUMLEDS);
+     }
+   else if (tHour == 5)  {
+       combineArrays(tempCompiled, screenHOUR5, &tempCompiled[0], NUMLEDS);
+     }
+   else if (tHour == 6)  {
+       combineArrays(tempCompiled, screenHOUR6, &tempCompiled[0], NUMLEDS);
+     } 
+   else if (tHour == 7)  {
+       combineArrays(tempCompiled, screenHOUR7, &tempCompiled[0], NUMLEDS);
+     } 
+   else if (tHour == 8)  {
+       combineArrays(tempCompiled, screenHOUR8, &tempCompiled[0], NUMLEDS);
+     }
+   else if (tHour == 9)  {
+       combineArrays(tempCompiled, screenHOUR9, &tempCompiled[0], NUMLEDS);
+     } 
+   else if (tHour == 10)  {
+       combineArrays(tempCompiled, screenHOUR10, &tempCompiled[0], NUMLEDS);
+     } 
+   else if (tHour == 11)  {
+       combineArrays(tempCompiled, screenHOUR11, &tempCompiled[0], NUMLEDS);
+     } 
+   else if (tHour == 12)  {
+       combineArrays(tempCompiled, screenHOUR12, &tempCompiled[0], NUMLEDS);
+     }
+  
+  // light up aux minute LED
+  if (tpast5mins == 0 )  { 
+  }
+  else if (tpast5mins == 1)  {
+    combineArrays(tempCompiled, screenMIN1, &tempCompiled[0], NUMLEDS);
+  }
+  else if (tpast5mins == 2)  {
+    combineArrays(tempCompiled, screenMIN1, &tempCompiled[0], NUMLEDS);
+    combineArrays(tempCompiled, screenMIN2, &tempCompiled[0], NUMLEDS);
+  }
+  if (tpast5mins == 3)  {
+    combineArrays(tempCompiled, screenMIN1, &tempCompiled[0], NUMLEDS);
+    combineArrays(tempCompiled, screenMIN2, &tempCompiled[0], NUMLEDS);
+    combineArrays(tempCompiled, screenMIN3, &tempCompiled[0], NUMLEDS);
+  }
+  if (tpast5mins == 4)  {
+    combineArrays(tempCompiled, screenMIN1, &tempCompiled[0], NUMLEDS);
+    combineArrays(tempCompiled, screenMIN2, &tempCompiled[0], NUMLEDS);
+    combineArrays(tempCompiled, screenMIN3, &tempCompiled[0], NUMLEDS);
+    combineArrays(tempCompiled, screenMIN4, &tempCompiled[0], NUMLEDS);       
   }
   
-  // // TEST: build up IT IS FIVE TO TWELVE as current screen
-  // combineArrays(tempCompiled, screenITIS, &tempCompiled[0], NUMLEDS);
-  // combineArrays(tempCompiled, screen5, &tempCompiled[0], NUMLEDS);
-  // combineArrays(tempCompiled, screenTO, &tempCompiled[0], NUMLEDS);
-  // combineArrays(tempCompiled, screenHOUR12, &tempCompiled[0], NUMLEDS);
+  // save last updated time
+  cHour = currentHour;
+  cMin = currentMin;
+  cSec = currentSec;
+  forceUpdate = false;
 
   memcpy(nextScreen, tempCompiled, NUMLEDS);
 
+  // keep copying from HERE
+  //-------------------------------------------------------------------
+  //-------------------------------------------------------------------
+  //------------------------------------------------------------------- 
+  //-------------------------------------------------------------------
+   
   // Compare nextscreen to currentscreen and build transition matrices
   for (int i = 0; i < NUMLEDS; i++)  {
     if ((currentScreen[i] == 1) && (nextScreen[i] == 1))  {
@@ -798,13 +985,13 @@ void loop() {
     else  { goingDown[i] = false; }
   }
 
-  Serial.println("currentScreenLevel:"); 
+  // light 'em up, handle the transitions
+  setNextScreenLevels();
 
-  setNextScreenLevels();     
-
-  delay(3000);  
-
+  // copy the next screen to current screen for the future
   memcpy(currentScreen, tempCompiled, NUMLEDS);
+  
+/*
   Serial.println("currentScreen is now  IT IS FIVE TO TWELVE");
   printArray(currentScreen,NUMLEDS);
 
@@ -836,15 +1023,9 @@ void loop() {
 
   Serial.println("currentScreenLevel:"); 
 
-    setNextScreenLevels();          
-
-  //-------------------------------------------------------------------------------------------------------------------------
-  // HERE IS WHERE I AM AT
-  //-------------------------------------------------------------------------------------------------------------------------
-
-  // TODO: LIGHT UP SOME LEDS test
-  // THEN WORRY ABOUT IMPLEMENTING ALL "SCREENS" FOR TIME AND TIME CODE: EASY WIN
+  setNextScreenLevels();
 
   Serial.println("--------------------------------");
-  delay(3000);
+*/          
+  delay(50);
 }
