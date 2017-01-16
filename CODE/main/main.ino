@@ -1,4 +1,8 @@
 // TO-DOs:
+// - hookup 3 buttons to breadboard and test button code 
+// - hookup photocell and see what kind of max/min values I get
+// -adapt photocell read code such that it truncates appropriately, then MAPS values appropriately
+// - fill in modedefault, modetest, and modelove functions
 // - put a low-pass filter on the current brightness level, so that it can't
 //   jump around in the middle of transitions or flicker in general
 
@@ -14,16 +18,16 @@
 #define DATAPIN    11
 #define CLOCKPIN   10
 
-// CHECK OR UPDATE
-#define BUT3 8   // minute++
-#define BUT2 7   // hour++
-#define BUT1 9  // change mode++
-#define PHOTOCELLPIN = 0; // the cell and 10K pulldown are connected to A0
+// CHECK OR UPDATE(but1read == HIGH) && ((millis()
+#define BUT3PIN 8   // minute++
+#define BUT2PIN 7   // hour++
+#define BUT1PIN 9  // change mode++
+#define PHOTOCELLPIN 0 // the cell and 10K pulldown are connected to A0
 
 Adafruit_DotStar strip = Adafruit_DotStar(
   NUMLEDS, DATAPIN, CLOCKPIN, DOTSTAR_BRG);
 
-// generated the following exponential increasing brightness levels by inputting
+// generated the following exponentially-increasingincreasing brightness levels by inputting
 // x values (0,1,2...63) into the formula y = 256^(x/63)-1
 uint8_t brightLevels[] = {0x00,0x00,0x00,0x00,0x00,0x01,0x01,0x01,
                               0x01,0x01,0x01,0x02,0x02,0x02,0x02,0x03,
@@ -34,8 +38,8 @@ uint8_t brightLevels[] = {0x00,0x00,0x00,0x00,0x00,0x01,0x01,0x01,
                               0x43,0x4A,0x51,0x58,0x60,0x69,0x73,0x7E,
                               0x89,0x96,0xA4,0xB3,0xC4,0xD6,0xE9,0xFF};
 
-int frameDelay = 10;         // (milliseconds), time between transition screens
-int nowBrightIndex = 63;  // (0-63), index for lookup table array above
+int frameDelay = 10;          // (milliseconds), time between transition screens
+int nowBrightIndex = 63;      // (0-63), index for lookup table array above
 int transUpBrightIndex = 0;
 int transDownBrightIndex = 0;
 bool transitioningNow = false; // track if we are still going to transition
@@ -54,6 +58,28 @@ int cHour;
 int cMin;
 int cSec;
 bool forceUpdate = true;
+
+int photocellReading;
+
+unsigned long but1LastPress = 0;  
+unsigned long but2LastPress = 0;  
+unsigned long but3LastPress = 0; 
+
+const int buttonPressDelay = 100;
+
+char loveCase = 'a';      //initial case for LOVE switchcase
+int dly = 1500;      //length of pause between Mike&Em and heart
+
+const int MODEDEFAULT = 0;
+const int MODEDEFAULTSEC = 1;
+const int MODESECONDS = 2;
+const int MODETEST = 3;
+const int MODELOVE = 4;
+
+const int ledDelay = 100;       // ms
+
+unsigned long ledLastUpdate = 0;
+int currentMode = MODEDEFAULT;
 
 //-------------------------------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------------------------------
@@ -800,32 +826,71 @@ void addOneHour()  {
   digitalClockDisplay();
 }
 
-//-------------------------------------------------------------------------------------------------------------------------
-//-------------------------------------------------------------------------------------------------------------------------
-//-------------------------------------------------------------------------------------------------------------------------
-
-void setup() {
-  Serial.begin(115200);
-  strip.begin(); // Initialize pins for output
-  strip.show();  // Turn all LEDs off ASAP
-
-  //CHECK OR UPDATE
-  pinMode (BUT1, INPUT);
-  pinMode (BUT2, INPUT);
-  pinMode (BUT3, INPUT);  
-
-  adjustTime(DEFAULTTIME);
-
-  zeroOutArray(currentScreen,NUMLEDS);
+void readPhotocell()  {
+  // Read and serial print brightness of photocell
+  photocellReading = analogRead(PHOTOCELLPIN);
+  //Serial.print("Analog reading = ");
+  //Serial.println(photocellReading); // the raw analog reading
 }
 
+void adjustMaxIntensity()  {
+}
 
-//-------------------------------------------------------------------------------------------------------------------------
-//-------------------------------------------------------------------------------------------------------------------------
-//-------------------------------------------------------------------------------------------------------------------------
+void checkButtons()  {
+  int but1read = digitalRead(BUT1PIN);
+  int but2read = digitalRead(BUT2PIN);
+  int but3read = digitalRead(BUT3PIN);
 
-void loop() {
+  if ((but1read == HIGH) && ((millis() - but1LastPress) > buttonPressDelay)) {
+    but1LastPress = millis();
+    doButton1();
+  }
+  else if ((but1read == LOW) && ((millis() - but1LastPress) > buttonPressDelay ))
+    but1LastPress = 0;  // reset
+  
+  if ((but2read == HIGH) && ((millis() - but2LastPress) > buttonPressDelay)) {
+    but2LastPress = millis();
+    doButton2();
+  }
+  else if ((but2read == LOW) && ((millis() - but2LastPress) > buttonPressDelay ))
+    but2LastPress = 0;  // reset
+    
+  if ((but3read == HIGH) && ((millis() - but3LastPress) > buttonPressDelay)) {
+    but3LastPress = millis();
+    doButton3();
+  }
+  else if ((but3read == LOW) && ((millis() - but3LastPress) > buttonPressDelay ))
+   but3LastPress = 0;  // reset  
+}
 
+void doButton1()  {  // mode change
+  if (currentMode == MODEDEFAULT)  {
+    currentMode = MODEDEFAULTSEC;
+  }
+  else if (currentMode == MODEDEFAULTSEC)  {
+    currentMode = MODESECONDS;
+  }
+  else if (currentMode == MODESECONDS)  {
+    currentMode = MODETEST;
+  }
+  else if (currentMode == MODETEST)  {
+    currentMode = MODELOVE;
+  }
+  else if (currentMode == MODELOVE)  {
+    currentMode = MODEDEFAULT;
+  }
+  forceUpdate = true;   
+}
+
+void doButton2()  {  // increment the hour
+  addOneHour();
+}
+
+void doButton3()  {  // increment the minute, reset seconds to zero
+  addOneMinute();
+}
+
+void modeDefault()  {
   int currentHour = hour();
   int currentMin  = minute();
   int currentSec  = second();
@@ -850,13 +915,7 @@ void loop() {
 
   zeroOutArray(nextScreen,NUMLEDS);
   zeroOutArray(tempCompiled,NUMLEDS);
-
-  // bool inputMatrix[5][NUMLEDS] = {{tempCompiled},{screenITIS},{screen5},{screenTO},{screenHOUR12}};
-
-  // for (int i = 0; i < sizeof(inputMatrix)-1; i++)  {
-  //   combineArrays(inputMatrix[0], inputMatrix[i+1], &tempCompiled[0], NUMLEDS);
-  // }
-  
+ 
   combineArrays(tempCompiled, screenITIS, &tempCompiled[0], NUMLEDS);
   
    if (t5mins == 5 || t5mins == 55)  {
@@ -984,6 +1043,72 @@ void loop() {
 
   // copy the next screen to current screen for the future
   memcpy(currentScreen, tempCompiled, NUMLEDS);
-          
+}
+
+void modeDefaultSecs()  {
+}
+
+void modeSeconds()  {
+}
+
+void modeTest()  {
+}
+
+void modeLove()  {
+}
+
+//-------------------------------------------------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------------------------------------------------
+
+void setup() {
+  Serial.begin(115200);
+  strip.begin(); // Initialize pins for output
+  strip.show();  // Turn all LEDs off ASAP
+
+  //CHECK OR UPDATE
+  pinMode (BUT1PIN, INPUT);
+  pinMode (BUT2PIN, INPUT);
+  pinMode (BUT3PIN, INPUT);  
+
+  adjustTime(DEFAULTTIME);
+
+  zeroOutArray(currentScreen,NUMLEDS);
+}
+
+//-------------------------------------------------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------------------------------------------------
+
+void loop() {
+  checkButtons();
+
+  readPhotocell();
+  
+  adjustMaxIntensity();
+
+  /*
+  // update LEDs and choose run mode    
+  if ((millis() - ledLastUpdate) > ledDelay) {
+    ledLastUpdate = millis();
+    if (currentMode == MODEDEFAULT)  {
+      modeDefault();
+    }
+    else if (currentMode == MODEDEFAULTSEC)  {
+      modeDefaultSecs();
+    }
+    else if (currentMode == MODESECONDS)  {
+      modeSeconds();
+    }
+    else if (currentMode == MODETEST)  {
+      modeTest();
+    }
+    else if (currentMode == MODELOVE)  {
+      modeLove();
+    }
+  }
+  */
+
+  modeDefault();  // remove later, this is just a placeholder        
   delay(10);
 }
