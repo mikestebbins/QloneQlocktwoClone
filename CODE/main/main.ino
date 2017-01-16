@@ -962,12 +962,6 @@ void loop() {
 
   memcpy(nextScreen, tempCompiled, NUMLEDS);
 
-  // keep copying from HERE
-  //-------------------------------------------------------------------
-  //-------------------------------------------------------------------
-  //------------------------------------------------------------------- 
-  //-------------------------------------------------------------------
-   
   // Compare nextscreen to currentscreen and build transition matrices
   for (int i = 0; i < NUMLEDS; i++)  {
     if ((currentScreen[i] == 1) && (nextScreen[i] == 1))  {
@@ -990,42 +984,6 @@ void loop() {
 
   // copy the next screen to current screen for the future
   memcpy(currentScreen, tempCompiled, NUMLEDS);
-  
-/*
-  Serial.println("currentScreen is now  IT IS FIVE TO TWELVE");
-  printArray(currentScreen,NUMLEDS);
-
-// TEST: build up IT IS ONE OCLOCK as next screen
-  zeroOutArray(tempCompiled,NUMLEDS);
-  combineArrays(tempCompiled, screenITIS, &tempCompiled[0], NUMLEDS);
-  combineArrays(tempCompiled, screenHOUR1, &tempCompiled[0], NUMLEDS);
-  combineArrays(tempCompiled, screenOCLOCK, &tempCompiled[0], NUMLEDS);
-  memcpy(nextScreen, tempCompiled, NUMLEDS);
-
-  printArray(nextScreen,NUMLEDS);
-
-  // Compare nextscreen to currentscreen and build transition matrices
-  for (int i = 0; i < NUMLEDS; i++)  {
-    if ((currentScreen[i] == 1) && (nextScreen[i] == 1))  {
-      stayingOn[i] = true; }
-    else  { stayingOn[i] = false; }
-    
-    if ((currentScreen[i] == 0) && (nextScreen[i] == 1))  {
-      goingUp[i] = true;
-      transitioningNow = true; }
-    else  { goingUp[i] = false; }
-    
-    if ((currentScreen[i] == 1) && (nextScreen[i] == 0))  {
-      goingDown[i] = true;
-      transitioningNow = true; }
-    else  { goingDown[i] = false; }
-  }
-
-  Serial.println("currentScreenLevel:"); 
-
-  setNextScreenLevels();
-
-  Serial.println("--------------------------------");
-*/          
-  delay(50);
+          
+  delay(10);
 }
