@@ -9,7 +9,7 @@
 #define COLUMNS 11
 #define NUMLEDS 114
 
-#define DEFAULTTIME 1483228861 // seconds since epoch as of 1/1/17 00:00:00
+#define DEFAULTTIME 1483228800 // seconds since epoch as of 1/1/17 00:00:00
 
 #define DATAPIN    11
 #define CLOCKPIN   10
