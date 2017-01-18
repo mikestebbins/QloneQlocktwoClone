@@ -70,6 +70,12 @@ const int buttonPressDelay = 100;
 char loveCase = 'a';      //initial case for LOVE switchcase
 int dly = 1500;      //length of pause between Mike&Em and heart
 
+// Variables will change for delays in TEST and LOVE modes:
+long previousMillis = 0;       // will store last time LED was updated
+// long pause = 10;               // interval at which to blink individual letters (milliseconds)
+// long longpause = 25;           // interval at which to blink whole words (milliseconds)
+int testCase = -1;             // initialize case number 0
+
 const int MODEDEFAULT = 0;
 const int MODEDEFAULTSEC = 1;
 const int MODESECONDS = 2;
@@ -891,17 +897,17 @@ void doButton3()  {  // increment the minute, reset seconds to zero
 }
 
 void modeDefault()  {
-  int currentHour = hour();
-  int currentMin  = minute();
-  int currentSec  = second();
+  int curHour = hour();
+  int curMin  = minute();
+  int curSec  = second();
 
-  if ((currentHour == cHour) && (currentMin == cMin) && (forceUpdate == false))  {
+  if ((curHour == cHour) && (curMin == cMin) && (forceUpdate == false))  {
     return;
   }
 
-  int tpast5mins = currentMin % 5; // remainder
-  int t5mins = currentMin - tpast5mins;
-  int tHour = currentHour;
+  int tpast5mins = curMin % 5; // remainder
+  int t5mins = curMin - tpast5mins;
+  int tHour = curHour;
    
   if (tHour > 12) {
     tHour = tHour - 12;
@@ -1014,9 +1020,9 @@ void modeDefault()  {
   }
   
   // save last updated time
-  cHour = currentHour;
-  cMin = currentMin;
-  cSec = currentSec;
+  cHour = curHour;
+  cMin = curMin;
+  cSec = curSec;
   forceUpdate = false;
 
   memcpy(nextScreen, tempCompiled, NUMLEDS);
@@ -1046,16 +1052,428 @@ void modeDefault()  {
 }
 
 void modeDefaultSecs()  {
+  int curHour = hour();
+  int curMin  = minute();
+  int curSec  = second();
+
+  // minute or hour has changed,..
+  if ((curHour != cHour) || (curMin != cMin) || (forceUpdate == true))  {
+    return;
+  }
+
+  int tpast5mins = curMin % 5; // remainder
+  int t5mins = curMin - tpast5mins;
+  int tHour = curHour;
+   
+  if (tHour > 12) {
+    tHour = tHour - 12;
+  }
+  else if (tHour == 0)  {
+    tHour = 12;
+  }
+
+  // create temp array to hold the OR combined result
+  bool tempCompiled[NUMLEDS];
+
+  zeroOutArray(nextScreen,NUMLEDS);
+  zeroOutArray(tempCompiled,NUMLEDS);
+ 
+  combineArrays(tempCompiled, screenITIS, &tempCompiled[0], NUMLEDS);
+  
+   if (t5mins == 5 || t5mins == 55)  {
+       combineArrays(tempCompiled, screen5, &tempCompiled[0], NUMLEDS);  // 5 past or 5 to..
+     }
+   else if (t5mins == 10 || t5mins == 50)  {
+       combineArrays(tempCompiled, screen10, &tempCompiled[0], NUMLEDS);  // 10 past or 10 to..
+     }  
+   else if (t5mins == 15 || t5mins == 45)  {
+       combineArrays(tempCompiled, screen15, &tempCompiled[0], NUMLEDS);  // ..etc.
+     }
+   else if (t5mins == 20 || t5mins == 40)  {
+       combineArrays(tempCompiled, screen20, &tempCompiled[0], NUMLEDS);
+     }
+   else if (t5mins == 25 || t5mins == 35)  {
+       combineArrays(tempCompiled, screen25, &tempCompiled[0], NUMLEDS);
+     }
+   else if (t5mins == 30)  {
+       combineArrays(tempCompiled, screen30, &tempCompiled[0], NUMLEDS);
+     }
+
+   // past or to or o'clock?
+   if (t5mins == 0)  {
+       combineArrays(tempCompiled, screenOCLOCK, &tempCompiled[0], NUMLEDS);
+     }
+   else if (t5mins > 30)  {
+       combineArrays(tempCompiled, screenTO, &tempCompiled[0], NUMLEDS);
+     }
+   else  {
+       combineArrays(tempCompiled, screenPAST, &tempCompiled[0], NUMLEDS);
+     }
+   
+   if (t5mins > 30) {
+    tHour = tHour+1;
+    if (tHour > 12) tHour = 1;
+   }
+
+   // light up the hour word
+   if (tHour == 1)  {
+       combineArrays(tempCompiled, screenHOUR1, &tempCompiled[0], NUMLEDS);
+     } 
+   else if (tHour == 2)  {
+       combineArrays(tempCompiled, screenHOUR2, &tempCompiled[0], NUMLEDS);
+     }
+   else if (tHour == 3)  {
+       combineArrays(tempCompiled, screenHOUR3, &tempCompiled[0], NUMLEDS);
+     } 
+   else if (tHour == 4)  {
+       combineArrays(tempCompiled, screenHOUR4, &tempCompiled[0], NUMLEDS);
+     }
+   else if (tHour == 5)  {
+       combineArrays(tempCompiled, screenHOUR5, &tempCompiled[0], NUMLEDS);
+     }
+   else if (tHour == 6)  {
+       combineArrays(tempCompiled, screenHOUR6, &tempCompiled[0], NUMLEDS);
+     } 
+   else if (tHour == 7)  {
+       combineArrays(tempCompiled, screenHOUR7, &tempCompiled[0], NUMLEDS);
+     } 
+   else if (tHour == 8)  {
+       combineArrays(tempCompiled, screenHOUR8, &tempCompiled[0], NUMLEDS);
+     }
+   else if (tHour == 9)  {
+       combineArrays(tempCompiled, screenHOUR9, &tempCompiled[0], NUMLEDS);
+     } 
+   else if (tHour == 10)  {
+       combineArrays(tempCompiled, screenHOUR10, &tempCompiled[0], NUMLEDS);
+     } 
+   else if (tHour == 11)  {
+       combineArrays(tempCompiled, screenHOUR11, &tempCompiled[0], NUMLEDS);
+     } 
+   else if (tHour == 12)  {
+       combineArrays(tempCompiled, screenHOUR12, &tempCompiled[0], NUMLEDS);
+     }
+
+  if (curSec != cSec) {
+    // update the seconds;
+
+    int r = curSec % 10;
+
+    if (r > 5)  {
+      r = r - 5;
+    }
+
+    // 4 different patterns.
+    // 0-4,   5-9,   10-14, 15-19 then repeat.
+    // 20-24, 25-29, 30-34, 35-39
+    // 40-44, 45-49, 50-54, 55-59
+  
+    if (((curSec > 0) && (curSec < 5)) || ((curSec > 20) && (curSec < 25)) || ((curSec > 40) && (curSec < 45))) {
+      if (r == 1)  {
+        combineArrays(tempCompiled, screenMIN1, &tempCompiled[0], NUMLEDS);
+      }
+      else if (r == 2)  {  
+        combineArrays(tempCompiled, screenMIN1, &tempCompiled[0], NUMLEDS); 
+        combineArrays(tempCompiled, screenMIN2, &tempCompiled[0], NUMLEDS);
+      }
+      else if (r == 3)  {  
+        combineArrays(tempCompiled, screenMIN1, &tempCompiled[0], NUMLEDS);
+        combineArrays(tempCompiled, screenMIN2, &tempCompiled[0], NUMLEDS);
+        combineArrays(tempCompiled, screenMIN3, &tempCompiled[0], NUMLEDS);
+      }
+      else if (r == 4)  {  
+        combineArrays(tempCompiled, screenMIN1, &tempCompiled[0], NUMLEDS);
+        combineArrays(tempCompiled, screenMIN2, &tempCompiled[0], NUMLEDS);
+        combineArrays(tempCompiled, screenMIN3, &tempCompiled[0], NUMLEDS);
+        combineArrays(tempCompiled, screenMIN4, &tempCompiled[0], NUMLEDS); 
+      }
+    }
+  
+    else if (((curSec > 5) && (curSec < 10)) || ((curSec > 25) && (curSec < 30)) || ((curSec > 45) && (curSec < 50))) {
+      if (r == 1)  { 
+        combineArrays(tempCompiled, screenMIN2, &tempCompiled[0], NUMLEDS);
+      }
+      else if (r == 2)  { 
+        combineArrays(tempCompiled, screenMIN2, &tempCompiled[0], NUMLEDS);
+        combineArrays(tempCompiled, screenMIN3, &tempCompiled[0], NUMLEDS);      
+      }
+      else if (r == 3)  { 
+        combineArrays(tempCompiled, screenMIN2, &tempCompiled[0], NUMLEDS);
+        combineArrays(tempCompiled, screenMIN3, &tempCompiled[0], NUMLEDS);
+        combineArrays(tempCompiled, screenMIN4, &tempCompiled[0], NUMLEDS);
+      }
+      else if (r == 4)  { 
+        combineArrays(tempCompiled, screenMIN2, &tempCompiled[0], NUMLEDS);
+        combineArrays(tempCompiled, screenMIN3, &tempCompiled[0], NUMLEDS);
+        combineArrays(tempCompiled, screenMIN4, &tempCompiled[0], NUMLEDS);
+        combineArrays(tempCompiled, screenMIN1, &tempCompiled[0], NUMLEDS); 
+
+      }
+    }
+    
+    else if (((curSec > 10) && (curSec < 15)) || ((curSec > 30) && (curSec < 35)) || ((curSec > 50) && (curSec < 55)))  {
+      if (r == 1)  { 
+        combineArrays(tempCompiled, screenMIN3, &tempCompiled[0], NUMLEDS);
+      }
+      else if (r == 2)  { 
+        combineArrays(tempCompiled, screenMIN3, &tempCompiled[0], NUMLEDS);
+        combineArrays(tempCompiled, screenMIN4, &tempCompiled[0], NUMLEDS);
+      }
+      else if (r == 3)  { 
+        combineArrays(tempCompiled, screenMIN3, &tempCompiled[0], NUMLEDS);
+        combineArrays(tempCompiled, screenMIN4, &tempCompiled[0], NUMLEDS);
+        combineArrays(tempCompiled, screenMIN1, &tempCompiled[0], NUMLEDS); 
+      }
+      else if (r == 4)  { 
+        combineArrays(tempCompiled, screenMIN3, &tempCompiled[0], NUMLEDS);
+        combineArrays(tempCompiled, screenMIN4, &tempCompiled[0], NUMLEDS);
+        combineArrays(tempCompiled, screenMIN1, &tempCompiled[0], NUMLEDS);
+        combineArrays(tempCompiled, screenMIN2, &tempCompiled[0], NUMLEDS);
+      }
+    }
+        
+    else if (((curSec > 15) && (curSec < 20)) || ((curSec > 35) && (curSec < 40)) || ((curSec > 55) && (curSec < 60)))  {
+      if (r == 1)  { 
+        combineArrays(tempCompiled, screenMIN4, &tempCompiled[0], NUMLEDS);
+      }
+      else if (r == 2)  { 
+        combineArrays(tempCompiled, screenMIN4, &tempCompiled[0], NUMLEDS);
+        combineArrays(tempCompiled, screenMIN1, &tempCompiled[0], NUMLEDS);
+      }
+      else if (r == 3)  { 
+        combineArrays(tempCompiled, screenMIN4, &tempCompiled[0], NUMLEDS);
+        combineArrays(tempCompiled, screenMIN1, &tempCompiled[0], NUMLEDS);
+        combineArrays(tempCompiled, screenMIN2, &tempCompiled[0], NUMLEDS);
+      }
+      else if (r == 4)  { 
+        combineArrays(tempCompiled, screenMIN4, &tempCompiled[0], NUMLEDS);
+        combineArrays(tempCompiled, screenMIN1, &tempCompiled[0], NUMLEDS);
+        combineArrays(tempCompiled, screenMIN2, &tempCompiled[0], NUMLEDS); 
+        combineArrays(tempCompiled, screenMIN3, &tempCompiled[0], NUMLEDS);
+      }
+    }
+    else if ((r == 0)  || (r == 5))  {
+      // light up no corner dots at al
+    }
+  }
+
+  // save last updated time
+  cHour = curHour;
+  cMin = curMin;
+  cSec = curSec;
+  forceUpdate = false; 
+
+  memcpy(nextScreen, tempCompiled, NUMLEDS);
+
+  // Compare nextscreen to currentscreen and build transition matrices
+  for (int i = 0; i < NUMLEDS; i++)  {
+    if ((currentScreen[i] == 1) && (nextScreen[i] == 1))  {
+      stayingOn[i] = true; }
+    else  { stayingOn[i] = false; }
+    
+    if ((currentScreen[i] == 0) && (nextScreen[i] == 1))  {
+      goingUp[i] = true;
+      transitioningNow = true; }
+    else  { goingUp[i] = false; }
+    
+    if ((currentScreen[i] == 1) && (nextScreen[i] == 0))  {
+      goingDown[i] = true;
+      transitioningNow = true; }
+    else  { goingDown[i] = false; }
+  }
+
+  // light 'em up, handle the transitions
+  setNextScreenLevels();
+
+  // copy the next screen to current screen for the future
+  memcpy(currentScreen, tempCompiled, NUMLEDS);
 }
 
 void modeSeconds()  {
+  int curHour = hour();
+  int curMin  = minute();
+  int curSec  = second();
+
+   // no seconds change, do nothing
+   if (curSec == cSec)  {
+    return;
+  }
+
+   int tsec = curSec;
+
+  // create temp array to hold the OR combined result
+  bool tempCompiled[NUMLEDS];
+
+  zeroOutArray(nextScreen,NUMLEDS);
+  zeroOutArray(tempCompiled,NUMLEDS);
+
+// HERE ----------------------------------------------------------------------------------------
+// HERE ----------------------------------------------------------------------------------------
+// HERE ----------------------------------------------------------------------------------------
+// HERE ----------------------------------------------------------------------------------------   
+
+   // decide if we only want to draw the right number of both numbers.
+   // reduce the apparentness of the flicker of the non changing digit.
+  if ((tsec - (tsec % 10) != cSec - (cSec % 10)) || (forceUpdate == true))  { 
+    if (tsec < 10)  {
+      combineArrays(tempCompiled, screenNUMLH0, &tempCompiled[0], NUMLEDS);
+    }
+    else if (tsec < 20)  {
+      combineArrays(tempCompiled, screenNUMLH1, &tempCompiled[0], NUMLEDS);
+    }
+    else if (tsec < 30)  {
+      combineArrays(tempCompiled, screenNUMLH2, &tempCompiled[0], NUMLEDS);
+    }
+    else if (tsec < 40)  {
+      combineArrays(tempCompiled, screenNUMLH3, &tempCompiled[0], NUMLEDS);
+    }
+    else if (tsec < 50)  {
+      combineArrays(tempCompiled, screenNUMLH4, &tempCompiled[0], NUMLEDS);
+    }
+    else  {
+      combineArrays(tempCompiled, screenNUMLH5, &tempCompiled[0], NUMLEDS);
+    }
+  }
+  else {
+      // do nothing
+    }  
+   
+   // seconds have changed, draw the seconds.
+  tsec = tsec % 10;
+
+  if (tsec == 0)  {
+    combineArrays(tempCompiled, screenNUMRH0, &tempCompiled[0], NUMLEDS);
+  }
+  if (tsec == 1)  {
+    combineArrays(tempCompiled, screenNUMRH1, &tempCompiled[0], NUMLEDS);
+  }
+  if (tsec == 2)  {
+    combineArrays(tempCompiled, screenNUMRH2, &tempCompiled[0], NUMLEDS);
+  }
+  if (tsec == 3)  {
+    combineArrays(tempCompiled, screenNUMRH3, &tempCompiled[0], NUMLEDS);
+  }
+  if (tsec == 4)  {
+    combineArrays(tempCompiled, screenNUMRH4, &tempCompiled[0], NUMLEDS);
+  }
+  if (tsec == 5)  {
+    combineArrays(tempCompiled, screenNUMRH5, &tempCompiled[0], NUMLEDS);
+  }
+  if (tsec == 6)  {
+    combineArrays(tempCompiled, screenNUMRH6, &tempCompiled[0], NUMLEDS);
+  }
+  if (tsec == 7)  {
+    combineArrays(tempCompiled, screenNUMRH7, &tempCompiled[0], NUMLEDS);
+  }
+  if (tsec == 8)  {
+    combineArrays(tempCompiled, screenNUMRH8, &tempCompiled[0], NUMLEDS);
+  }
+  if (tsec == 9)  {
+    combineArrays(tempCompiled, screenNUMRH9, &tempCompiled[0], NUMLEDS);
+  }
+
+  // save last updated time
+  cHour = curHour;
+  cMin = curMin;
+  cSec = curSec;
+  forceUpdate = false;
+
+  memcpy(nextScreen, tempCompiled, NUMLEDS);
+
+  // Compare nextscreen to currentscreen and build transition matrices
+  for (int i = 0; i < NUMLEDS; i++)  {
+    if ((currentScreen[i] == 1) && (nextScreen[i] == 1))  {
+      stayingOn[i] = true; }
+    else  { stayingOn[i] = false; }
+    
+    if ((currentScreen[i] == 0) && (nextScreen[i] == 1))  {
+      goingUp[i] = true;
+      transitioningNow = true; }
+    else  { goingUp[i] = false; }
+    
+    if ((currentScreen[i] == 1) && (nextScreen[i] == 0))  {
+      goingDown[i] = true;
+      transitioningNow = true; }
+    else  { goingDown[i] = false; }
+  }
+
+  // light 'em up, handle the transitions
+  setNextScreenLevels();
+
+  // copy the next screen to current screen for the future
+  memcpy(currentScreen, tempCompiled, NUMLEDS);
 }
 
 void modeTest()  {
 }
 
 void modeLove()  {
+  
+  unsigned long currentMillis = millis();
+
+  if ((currentMillis - previousMillis > dly) || (forceUpdate == true))  {
+    // save the last time you switched cases
+    previousMillis = currentMillis;
+
+    // create temp array to hold the OR combined result
+    bool tempCompiled[NUMLEDS];
+
+    zeroOutArray(nextScreen,NUMLEDS);
+    zeroOutArray(tempCompiled,NUMLEDS);  
+
+    switch (loveCase)  { 
+    case 'a':
+      combineArrays(tempCompiled, screenMIKEEM, &tempCompiled[0], NUMLEDS); 
+      break;
+    case 'b':
+      combineArrays(tempCompiled, screenHEARTLINE, &tempCompiled[0], NUMLEDS);
+      break;
+    case 'c':
+      combineArrays(tempCompiled, screenHEARTFULL, &tempCompiled[0], NUMLEDS);
+      break;
+    }
+
+    // switch the case from it's previous value
+    if (loveCase == 'a')  {
+      loveCase = 'b'; 
+    }
+    else if (loveCase == 'b')  {
+      loveCase = 'c';
+    } 
+    else  {
+      loveCase = 'a';
+    }    
+    
+    // ensure forceUpdate is set to false
+    forceUpdate = false;  
+
+    memcpy(nextScreen, tempCompiled, NUMLEDS);
+
+    // Compare nextscreen to currentscreen and build transition matrices
+    for (int i = 0; i < NUMLEDS; i++)  {
+      if ((currentScreen[i] == 1) && (nextScreen[i] == 1))  {
+        stayingOn[i] = true; }
+      else  { stayingOn[i] = false; }
+      
+      if ((currentScreen[i] == 0) && (nextScreen[i] == 1))  {
+        goingUp[i] = true;
+        transitioningNow = true; }
+      else  { goingUp[i] = false; }
+      
+      if ((currentScreen[i] == 1) && (nextScreen[i] == 0))  {
+        goingDown[i] = true;
+        transitioningNow = true; }
+      else  { goingDown[i] = false; }
+    }
+
+    // light 'em up, handle the transitions
+    setNextScreenLevels();
+
+    // copy the next screen to current screen for the future
+    memcpy(currentScreen, tempCompiled, NUMLEDS);
+  }
 }
+
+
 
 //-------------------------------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------------------------------
