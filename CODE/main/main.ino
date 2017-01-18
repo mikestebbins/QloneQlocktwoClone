@@ -1,15 +1,119 @@
 // TO-DOs:
 // - hookup 3 buttons to breadboard and test button code 
 // - hookup photocell and see what kind of max/min values I get
-// -adapt photocell read code such that it truncates appropriately, then MAPS values appropriately
-// - fill in modedefault, modetest, and modelove functions
+// - adapt photocell read code such that it truncates appropriately, then MAPS values appropriately
+// - fill modetest function
 // - put a low-pass filter on the current brightness level, so that it can't
 //   jump around in the middle of transitions or flicker in general
+// - DELETE ALL CODE THAT BEGINS WITH ////
+// - arrange variables nicely, and go through comments once
 
+/*
+    Copyright 2017 Michael Stebbins
+    Licensed under a Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported License
+
+    Based on code from Marcus Liang's QlockTwo Clone, 
+    Copyright 2009, information: http://www.flickr.com/photos/19203306@N00/sets/72157622998814956/ 
+    Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file 
+    except in compliance with the License.  You may obtain a copy of the License at
+    http://www.apache.org/licenses/LICENSE-2.0
+    Unless required by applicable law or agreed to in writing, software distributed under the 
+    License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, 
+    either express or implied. See the License for the specific language governing permissions 
+    and limitations under the License.
+
+    Ran version 14 for some time, with LEDs continuing to fail.  Decided to replace individual, inexpensive
+    white LEDs with Adafruit Dotstar individually-addressable Cool White color temp lights.
+    version_reboot starts from version 14, with changes to move to Teensy 3.2 (with soldered-on chip for 
+    Teensy RealTimeClock), Dotstar lights and 3.3 to 5 volt level shifter. This completely changes the 
+    "charlie-plexed" work and LED drivers necessary in the previous version.
+ 
+*  LAST UPDATED: 01-17-2017
+*  Copyright 2016 Mike Stebbins
+*  Arduino 1.6.11, Teensyduino 1.30, and Windows 10 used to upload
+
+//-------------------------------------------------------------------------------------------------------------
+//PIN ASSIGNMENTS
+//-------------------------------------------------------------------------------------------------------------
+                          
+Teensy 3.1 / 3.2
+                                  |      |
+                          --------|      |--------
+        Power Supply (-) [] Gnd              Vin [] Power Supply (+)
+                         [] RX1             AGND []
+                         [] TX1             3.3V []             
+                         [] 02                23 []
+                         [] 03                22 []
+                         [] 04                21 []
+                         [] 05                20 []
+                         [] 06                19 [] SCL
+                         [] 07                18 [] SDA
+                         [] 08                17 []
+                         |  09                16 []
+                         [] 10                15 []
+                         [] 11                14 []
+                         [] 12                13 []
+                          |    (+)   (-)         |
+                          |     [] [] [] [] []   |
+                          ------------------------
+                                3 volt coin cell for maintaining RTC
+
+ 74AHCT125 Voltage Level Shifter
+                     --------------
+                GND [] 1OE    VCC [] 5V input
+   Strip 1 CLOCK In [] 1A     4OE [] 
+  Strip 1 CLOCK Out [] 1Y      4A [] 
+                GND [] 2OE     4Y [] 
+    Strip 1 DATA In [] 2A     3OE [] 
+   Strip 1 DATA Out [] 2Y      3A [] 
+         Teensy GND [] GND     3Y [] 
+                     --------------
+
+ Power Supply - 5V, 2.4A
+                        [] +
+                        [] -
+                                        
+//-------------------------------------------------------------------------------------------------------------       
+
+min1                                                  min2                    
+   I    T    L    I    S    Y    M    I    K    E    &
+   A    D    Q    U    A    R    T    E    R    E    M
+   T    W    E    N    T    Y    F    I    V    E    X
+   H    A    L    F    B    T    E    N    F    T    O
+   P    A    S    T    E    R    U    N    I    N    E
+   O    N    E    S    I    X    T    H    R    E    E
+   F    O    U    R    F    I    V    E    T    W    O
+   E    I    G    H    T    E    L    E    V    E    N
+   S    E    V    E    N    T    W    E    L    V    E
+   T    E    N    S    E    O    C    L    O    C    K
+min4                                                  min3  
+
+LETTER to LED strip NUMBER decoder
+111                                                   112
+  000  001  002  003  004  005  006  007  008  009  010 
+  021  020  019  018  017  016  015  014  013  012  011
+  022  023  024  025  026  027  028  029  030  031  032   
+  043  042  041  040  039  038  037  036  035  034  033
+  044  045  046  047  048  049  050  051  052  053  054   
+  065  064  063  062  061  060  059  058  057  056  055
+  066  067  068  069  070  071  072  073  074  075  076   
+  087  086  085  084  083  082  081  080  079  078  077
+  088  089  090  091  092  093  094  095  096  097  098   
+  109  108  107  106  105  104  103  102  101  100  099
+110                                                   113
+
+*/
+
+//-------------------------------------------------------------------------------------------------------------
+//INCLUDES
+//-------------------------------------------------------------------------------------------------------------
 #include <Adafruit_DotStar.h>
 #include <SPI.h>
 #include <TimeLib.h>
 
+//-------------------------------------------------------------------------------------------------------------
+//CONSTANTS
+//-------------------------------------------------------------------------------------------------------------
 #define COLUMNS 11
 #define NUMLEDS 114
 
@@ -24,6 +128,9 @@
 #define BUT1PIN 9  // change mode++
 #define PHOTOCELLPIN 0 // the cell and 10K pulldown are connected to A0
 
+//-------------------------------------------------------------------------------------------------------------
+//VARIABLES
+//-------------------------------------------------------------------------------------------------------------
 Adafruit_DotStar strip = Adafruit_DotStar(
   NUMLEDS, DATAPIN, CLOCKPIN, DOTSTAR_BRG);
 
@@ -72,8 +179,8 @@ int dly = 1500;      //length of pause between Mike&Em and heart
 
 // Variables will change for delays in TEST and LOVE modes:
 long previousMillis = 0;       // will store last time LED was updated
-// long pause = 10;               // interval at which to blink individual letters (milliseconds)
-// long longpause = 25;           // interval at which to blink whole words (milliseconds)
+long pause = 10;               // interval at which to blink individual letters (milliseconds)
+// long longpause = 25;        // interval at which to blink whole words (milliseconds)
 int testCase = -1;             // initialize case number 0
 
 const int MODEDEFAULT = 0;
@@ -88,7 +195,7 @@ unsigned long ledLastUpdate = 0;
 int currentMode = MODEDEFAULT;
 
 //-------------------------------------------------------------------------------------------------------------------------
-//-------------------------------------------------------------------------------------------------------------------------
+//SCREENS SETUP
 //-------------------------------------------------------------------------------------------------------------------------
 // Following are all of the different screens. Generated with Excel sheet in project folder.
 bool screenITIS[NUMLEDS] =
@@ -679,10 +786,9 @@ bool screenHEARTLINE[NUMLEDS] =
    0,0,0,0,1,0,1,0,0,0,0,           //   _,_,_,_,N,_,W,_,_,_,_,
    0,0,0,0,0,1,0,0,0,0,0,0,0,0,0};  //   _,_,_,_,_,O,_,_,_,_,_,_,_,_,_}
 
-//--------------------------------------------------------------------------------------
-// FUNCTIONS ---------------------------------------------------------------------------
-//--------------------------------------------------------------------------------------
-
+//-------------------------------------------------------------------------------------------------------------
+//FUNCTIONS
+//-------------------------------------------------------------------------------------------------------------
 void zeroOutArray(bool theArray[], int sizeOfArray)  {
   for (int i = 0; i < sizeOfArray; i++)  {
     theArray[i] = 0;
@@ -1306,13 +1412,8 @@ void modeSeconds()  {
   zeroOutArray(nextScreen,NUMLEDS);
   zeroOutArray(tempCompiled,NUMLEDS);
 
-// HERE ----------------------------------------------------------------------------------------
-// HERE ----------------------------------------------------------------------------------------
-// HERE ----------------------------------------------------------------------------------------
-// HERE ----------------------------------------------------------------------------------------   
-
-   // decide if we only want to draw the right number of both numbers.
-   // reduce the apparentness of the flicker of the non changing digit.
+  // decide if we only want to draw the right number of both numbers.
+  // reduce the apparentness of the flicker of the non changing digit.
   if ((tsec - (tsec % 10) != cSec - (cSec % 10)) || (forceUpdate == true))  { 
     if (tsec < 10)  {
       combineArrays(tempCompiled, screenNUMLH0, &tempCompiled[0], NUMLEDS);
@@ -1404,6 +1505,35 @@ void modeSeconds()  {
 }
 
 void modeTest()  {
+  unsigned long currentMillis = millis();
+
+  if (testCase < 114)   {
+    if(currentMillis - previousMillis > pause)  {
+      // save the last time you switched cases
+      previousMillis = currentMillis;  
+      // increment the case number by one, unless it has reached 
+      // the last case, then go back to zero:
+      if (testCase < 113) {
+        testCase ++;
+      } 
+      else  {
+        testCase = 0;
+      }
+    }
+  }
+
+  switch (testCase) { 
+    case 0:
+      // RUN THROUGH EACH LED ONE BY ONE, QUICKLY
+    break;
+    case 1:
+      // RUN THE REVERSE OF ABOVE; ALL LIT WITH ONE DARK PIXEL MOVING QUICKLY
+    break;
+    case 2: // AND ON....
+      // RUN THROUGH THE SCREENS QUICKLY
+    break;
+  }
+
 }
 
 void modeLove()  {
@@ -1475,10 +1605,9 @@ void modeLove()  {
 
 
 
-//-------------------------------------------------------------------------------------------------------------------------
-//-------------------------------------------------------------------------------------------------------------------------
-//-------------------------------------------------------------------------------------------------------------------------
-
+//-------------------------------------------------------------------------------------------------------------
+//SETUP
+//-------------------------------------------------------------------------------------------------------------
 void setup() {
   Serial.begin(115200);
   strip.begin(); // Initialize pins for output
@@ -1494,10 +1623,9 @@ void setup() {
   zeroOutArray(currentScreen,NUMLEDS);
 }
 
-//-------------------------------------------------------------------------------------------------------------------------
-//-------------------------------------------------------------------------------------------------------------------------
-//-------------------------------------------------------------------------------------------------------------------------
-
+//-------------------------------------------------------------------------------------------------------------
+//LOOP
+//-------------------------------------------------------------------------------------------------------------
 void loop() {
   checkButtons();
 
