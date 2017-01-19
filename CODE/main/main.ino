@@ -179,9 +179,10 @@ int dly = 1500;      //length of pause between Mike&Em and heart
 
 // Variables will change for delays in TEST and LOVE modes:
 long previousMillis = 0;       // will store last time LED was updated
-long pause = 10;               // interval at which to blink individual letters (milliseconds)
+long pauseDuration = 20;               // interval at which to blink individual letters (milliseconds)
 // long longpause = 25;        // interval at which to blink whole words (milliseconds)
 int testCase = -1;             // initialize case number 0
+byte testBrightness = 0x15;    // set a bit lower than full, as all will be on at once
 
 const int MODEDEFAULT = 0;
 const int MODEDEFAULTSEC = 1;
@@ -1507,13 +1508,14 @@ void modeSeconds()  {
 void modeTest()  {
   unsigned long currentMillis = millis();
 
-  if (testCase < 114)   {
-    if(currentMillis - previousMillis > pause)  {
+  // a bit complicated, but makes more sense if there are more than 2 cases
+  if (testCase < 2)   {
+    if(currentMillis - previousMillis > pauseDuration)  {
       // save the last time you switched cases
       previousMillis = currentMillis;  
       // increment the case number by one, unless it has reached 
       // the last case, then go back to zero:
-      if (testCase < 113) {
+      if (testCase < 1) {
         testCase ++;
       } 
       else  {
@@ -1523,15 +1525,59 @@ void modeTest()  {
   }
 
   switch (testCase) { 
-    case 0:
+    case 0:  {
       // RUN THROUGH EACH LED ONE BY ONE, QUICKLY
+      for (int i = 0; i < NUMLEDS; i++)  {
+        strip.setPixelColor(i,0);
+      }
+      strip.show();
+      
+      int currentPixel = 0;      
+      for (int j = 0; j < NUMLEDS; j++)  {
+
+        for (int i = 0; i < NUMLEDS; i++)  {
+
+          if (i == currentPixel)  {
+            strip.setPixelColor(i,testBrightness);  
+          }
+          else  {          
+            strip.setPixelColor(i,0x00);
+          }
+        }
+        strip.show();
+        currentPixel++;
+        delay(pauseDuration);
+      }
+    }
     break;
-    case 1:
+    case 1:  {
       // RUN THE REVERSE OF ABOVE; ALL LIT WITH ONE DARK PIXEL MOVING QUICKLY
+      for (int i = 0; i < NUMLEDS; i++)  {
+        strip.setPixelColor(i,testBrightness);
+      }
+      strip.show();
+      
+      int currentPixel = 0;      
+      for (int j = 0; j < NUMLEDS; j++)  {
+
+        for (int i = 0; i < NUMLEDS; i++)  {
+
+          if (i == currentPixel)  {
+            strip.setPixelColor(i,0x00);  
+          }
+          else  {          
+            strip.setPixelColor(i,testBrightness);
+          }
+        }
+        strip.show();
+        currentPixel++;
+        delay(pauseDuration);
+      }
+    }
     break;
-    case 2: // AND ON....
-      // RUN THROUGH THE SCREENS QUICKLY
-    break;
+//    case 2: // AND ON....
+//      // RUN THROUGH THE SCREENS QUICKLY
+//    break;
   }
 
 }
