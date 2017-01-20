@@ -2,7 +2,6 @@
 // - hookup 3 buttons to breadboard and test button code 
 // - hookup photocell and see what kind of max/min values I get
 // - adapt photocell read code such that it truncates appropriately, then MAPS values appropriately
-// - fill modetest function
 // - put a low-pass filter on the current brightness level, so that it can't
 //   jump around in the middle of transitions or flicker in general
 // - DELETE ALL CODE THAT BEGINS WITH ////
@@ -56,6 +55,7 @@ Teensy 3.1 / 3.2
                           |    (+)   (-)         |
                           |     [] [] [] [] []   |
                           ------------------------
+                                |
                                 3 volt coin cell for maintaining RTC
 
  74AHCT125 Voltage Level Shifter
@@ -75,7 +75,7 @@ Teensy 3.1 / 3.2
                                         
 //-------------------------------------------------------------------------------------------------------------       
 
-min1                                                  min2                    
+min1                                                 min2                    
    I    T    L    I    S    Y    M    I    K    E    &
    A    D    Q    U    A    R    T    E    R    E    M
    T    W    E    N    T    Y    F    I    V    E    X
@@ -86,7 +86,7 @@ min1                                                  min2
    E    I    G    H    T    E    L    E    V    E    N
    S    E    V    E    N    T    W    E    L    V    E
    T    E    N    S    E    O    C    L    O    C    K
-min4                                                  min3  
+min4                                                 min3  
 
 LETTER to LED strip NUMBER decoder
 111                                                   112
@@ -146,7 +146,7 @@ uint8_t brightLevels[] = {0x00,0x00,0x00,0x00,0x00,0x01,0x01,0x01,
                               0x89,0x96,0xA4,0xB3,0xC4,0xD6,0xE9,0xFF};
 
 int frameDelay = 10;          // (milliseconds), time between transition screens
-int nowBrightIndex = 63;      // (0-63), index for lookup table array above
+int nowBrightIndex = 40;      // (0-63), index for lookup table array above
 int transUpBrightIndex = 0;
 int transDownBrightIndex = 0;
 bool transitioningNow = false; // track if we are still going to transition
@@ -825,13 +825,13 @@ void printArray(bool theArray[], int sizeOfArray)  {
 
 void printArrayByte(uint8_t theArray[], int sizeOfArray)  {
   for (int i = 0; i < sizeOfArray; i++)  {
-    PrintHex8(theArray,sizeOfArray);
+    printHex8(theArray,sizeOfArray);
   }
   Serial.println();
 }
 
 // from: https://forum.arduino.cc/index.php?topic=38107.0
-void PrintHex8(uint8_t *data, uint8_t length)  { // prints 8-bit data in hex with leading zeroes
+void printHex8(uint8_t *data, uint8_t length)  { // prints 8-bit data in hex with leading zeroes
   for (int i=0; i<length; i++) { 
     if (data[i]<0x10) {
       Serial.print("0");
@@ -942,8 +942,8 @@ void addOneHour()  {
 void readPhotocell()  {
   // Read and serial print brightness of photocell
   photocellReading = analogRead(PHOTOCELLPIN);
-  //Serial.print("Analog reading = ");
-  //Serial.println(photocellReading); // the raw analog reading
+  Serial.print("Analog reading = ");
+  Serial.println(photocellReading); // the raw analog reading
 }
 
 void adjustMaxIntensity()  {
@@ -1164,7 +1164,7 @@ void modeDefaultSecs()  {
   int curSec  = second();
 
   // minute or hour has changed,..
-  if ((curHour != cHour) || (curMin != cMin) || (forceUpdate == true))  {
+  if ((curHour == cHour) && (curMin == cMin) && (forceUpdate == false))  {
     return;
   }
 
@@ -1358,16 +1358,8 @@ void modeDefaultSecs()  {
         combineArrays(tempCompiled, screenMIN3, &tempCompiled[0], NUMLEDS);
       }
     }
-    else if ((r == 0)  || (r == 5))  {
-      // light up no corner dots at al
-    }
-  }
-
-  // save last updated time
-  cHour = curHour;
-  cMin = curMin;
-  cSec = curSec;
-  forceUpdate = false; 
+    
+    else if ((r == 0)  || (r == 5))  {    }
 
   memcpy(nextScreen, tempCompiled, NUMLEDS);
 
@@ -1395,6 +1387,15 @@ void modeDefaultSecs()  {
   memcpy(currentScreen, tempCompiled, NUMLEDS);
 }
 
+  // save last updated time
+  cHour = curHour;
+  cMin = curMin;
+  cSec = curSec;
+  forceUpdate = false; 
+
+
+}
+
 void modeSeconds()  {
   int curHour = hour();
   int curMin  = minute();
@@ -1415,7 +1416,7 @@ void modeSeconds()  {
 
   // decide if we only want to draw the right number of both numbers.
   // reduce the apparentness of the flicker of the non changing digit.
-  if ((tsec - (tsec % 10) != cSec - (cSec % 10)) || (forceUpdate == true))  { 
+  // if ((tsec - (tsec % 10) != cSec - (cSec % 10)) || (forceUpdate == true))  { 
     if (tsec < 10)  {
       combineArrays(tempCompiled, screenNUMLH0, &tempCompiled[0], NUMLEDS);
     }
@@ -1434,10 +1435,11 @@ void modeSeconds()  {
     else  {
       combineArrays(tempCompiled, screenNUMLH5, &tempCompiled[0], NUMLEDS);
     }
-  }
-  else {
-      // do nothing
-    }  
+  // }
+  
+  // else {
+  //     // do nothing
+  //   }  
    
    // seconds have changed, draw the seconds.
   tsec = tsec % 10;
@@ -1673,11 +1675,12 @@ void setup() {
 //LOOP
 //-------------------------------------------------------------------------------------------------------------
 void loop() {
-  checkButtons();
-
-  readPhotocell();
   
-  adjustMaxIntensity();
+//  checkButtons();
+
+//  readPhotocell();
+  
+//  adjustMaxIntensity();
 
   /*
   // update LEDs and choose run mode    
@@ -1701,6 +1704,10 @@ void loop() {
   }
   */
 
-  modeDefault();  // remove later, this is just a placeholder        
+//  modeDefault();  // remove later, this is just a placeholder 
+  modeDefaultSecs();
+//modeSeconds();
+//  modeLove();
+//  modeTest();
   delay(10);
 }
