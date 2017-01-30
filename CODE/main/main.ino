@@ -135,18 +135,18 @@ Adafruit_DotStar strip = Adafruit_DotStar(
   NUMLEDS, DATAPIN, CLOCKPIN, DOTSTAR_BRG);
 
 // generated the following exponentially-increasingincreasing brightness levels by inputting
-// x values (0,1,2...63) into the formula y = 256^(x/63)-1
-uint8_t brightLevels[] = {0x00,0x00,0x00,0x00,0x00,0x01,0x01,0x01,
-                              0x01,0x01,0x01,0x02,0x02,0x02,0x02,0x03,
-                              0x03,0x03,0x04,0x04,0x05,0x05,0x06,0x07,
-                              0x07,0x08,0x09,0x0A,0x0B,0x0C,0x0D,0x0E,
-                              0x10,0x11,0x13,0x15,0x17,0x19,0x1B,0x1E,
-                              0x21,0x24,0x27,0x2B,0x2F,0x34,0x38,0x3E,
-                              0x43,0x4A,0x51,0x58,0x60,0x69,0x73,0x7E,
-                              0x89,0x96,0xA4,0xB3,0xC4,0xD6,0xE9,0xFF};
+// x values (0,1,2...63) into the formula y = 256^(x/63)-1 and deleting all leading zeros but 1.
+uint8_t brightLevels[] = {0x00,0x01,0x01,0x01,
+                          0x01,0x01,0x01,0x02,0x02,0x02,0x02,0x03,
+                          0x03,0x03,0x04,0x04,0x05,0x05,0x06,0x07,
+                          0x07,0x08,0x09,0x0A,0x0B,0x0C,0x0D,0x0E,
+                          0x10,0x11,0x13,0x15,0x17,0x19,0x1B,0x1E,
+                          0x21,0x24,0x27,0x2B,0x2F,0x34,0x38,0x3E,
+                          0x43,0x4A,0x51,0x58,0x60,0x69,0x73,0x7E,
+                          0x89,0x96,0xA4,0xB3,0xC4,0xD6,0xE9,0xFF};
 
 int frameDelay = 10;          // (milliseconds), time between transition screens
-int nowBrightIndex = 40;      // (0-63), index for lookup table array above
+int nowBrightIndex = 40;      // (0-59), index for lookup table array above
 int transUpBrightIndex = 0;
 int transDownBrightIndex = 0;
 bool transitioningNow = false; // track if we are still going to transition
@@ -815,6 +815,7 @@ void combineArrays(bool arrayA[], bool arrayB[], bool *parrayC, int sizeOfArray)
   }
 }
 
+//-------------------------------------------------------------------------------------------------------------
 void printArray(bool theArray[], int sizeOfArray)  {
   for (int i = 0; i < sizeOfArray; i++)  {
     Serial.print(theArray[i]);
@@ -823,6 +824,7 @@ void printArray(bool theArray[], int sizeOfArray)  {
   Serial.println();
 }
 
+//-------------------------------------------------------------------------------------------------------------
 void printArrayByte(uint8_t theArray[], int sizeOfArray)  {
   for (int i = 0; i < sizeOfArray; i++)  {
     printHex8(theArray,sizeOfArray);
@@ -830,6 +832,7 @@ void printArrayByte(uint8_t theArray[], int sizeOfArray)  {
   Serial.println();
 }
 
+//-------------------------------------------------------------------------------------------------------------
 // from: https://forum.arduino.cc/index.php?topic=38107.0
 void printHex8(uint8_t *data, uint8_t length)  { // prints 8-bit data in hex with leading zeroes
   for (int i=0; i<length; i++) { 
@@ -841,6 +844,7 @@ void printHex8(uint8_t *data, uint8_t length)  { // prints 8-bit data in hex wit
     }
 }
 
+//-------------------------------------------------------------------------------------------------------------
 void setNextScreenLevels()  {
   // set the transition indices to their starting points for the tranisitions
   transDownBrightIndex = nowBrightIndex;
@@ -879,6 +883,7 @@ void setNextScreenLevels()  {
   }
 }
 
+//-------------------------------------------------------------------------------------------------------------
 void lightUpLEDs()  {
   // takes care of the LED strips being wired in "S"-shaped chain
   bool reversed = false;  // track if we're on a Left-to-Right strip or R-to-L (= reversed)
@@ -902,6 +907,7 @@ void lightUpLEDs()  {
   strip.show();
 }
 
+//-------------------------------------------------------------------------------------------------------------
 void digitalClockDisplay() {
   // digital clock display of the time
   Serial.print(hour());
@@ -916,6 +922,7 @@ void digitalClockDisplay() {
   Serial.println(); 
 }
 
+//-------------------------------------------------------------------------------------------------------------
 void printDigits(int digits) {
   // utility function for digital clock display: prints preceding colon and leading 0
   Serial.print(":");
@@ -924,6 +931,7 @@ void printDigits(int digits) {
   Serial.print(digits);
 }
 
+//-------------------------------------------------------------------------------------------------------------
 // adds one minute to the time and resets seconds to zero
 void addOneMinute()  {
   digitalClockDisplay();
@@ -932,6 +940,7 @@ void addOneMinute()  {
   digitalClockDisplay();
 }
 
+//-------------------------------------------------------------------------------------------------------------
 // adds one hour to the time
 void addOneHour()  {
   digitalClockDisplay();
@@ -939,6 +948,7 @@ void addOneHour()  {
   digitalClockDisplay();
 }
 
+//-------------------------------------------------------------------------------------------------------------
 void readPhotocell()  {
   // Read and serial print brightness of photocell
   photocellReading = analogRead(PHOTOCELLPIN);
@@ -946,9 +956,11 @@ void readPhotocell()  {
   Serial.println(photocellReading); // the raw analog reading
 }
 
+//-------------------------------------------------------------------------------------------------------------
 void adjustMaxIntensity()  {
 }
 
+//-------------------------------------------------------------------------------------------------------------
 void checkButtons()  {
   int but1read = digitalRead(BUT1PIN);
   int but2read = digitalRead(BUT2PIN);
@@ -976,6 +988,7 @@ void checkButtons()  {
    but3LastPress = 0;  // reset  
 }
 
+//-------------------------------------------------------------------------------------------------------------
 void doButton1()  {  // mode change
   if (currentMode == MODEDEFAULT)  {
     currentMode = MODEDEFAULTSEC;
@@ -995,14 +1008,17 @@ void doButton1()  {  // mode change
   forceUpdate = true;   
 }
 
+//-------------------------------------------------------------------------------------------------------------
 void doButton2()  {  // increment the hour
   addOneHour();
 }
 
+//-------------------------------------------------------------------------------------------------------------
 void doButton3()  {  // increment the minute, reset seconds to zero
   addOneMinute();
 }
 
+//-------------------------------------------------------------------------------------------------------------
 void modeDefault()  {
   int curHour = hour();
   int curMin  = minute();
@@ -1158,13 +1174,14 @@ void modeDefault()  {
   memcpy(currentScreen, tempCompiled, NUMLEDS);
 }
 
+//-------------------------------------------------------------------------------------------------------------
 void modeDefaultSecs()  {
   int curHour = hour();
   int curMin  = minute();
   int curSec  = second();
 
   // minute or hour has changed,..
-  if ((curHour == cHour) && (curMin == cMin) && (forceUpdate == false))  {
+  if ((curHour == cHour) && (curMin == cMin) && (curSec == cSec) && (forceUpdate == false))  {
     return;
   }
 
@@ -1396,6 +1413,7 @@ void modeDefaultSecs()  {
 
 }
 
+//-------------------------------------------------------------------------------------------------------------
 void modeSeconds()  {
   int curHour = hour();
   int curMin  = minute();
@@ -1507,6 +1525,7 @@ void modeSeconds()  {
   memcpy(currentScreen, tempCompiled, NUMLEDS);
 }
 
+//-------------------------------------------------------------------------------------------------------------
 void modeTest()  {
   unsigned long currentMillis = millis();
 
@@ -1584,6 +1603,7 @@ void modeTest()  {
 
 }
 
+//-------------------------------------------------------------------------------------------------------------
 void modeLove()  {
   
   unsigned long currentMillis = millis();
@@ -1650,8 +1670,6 @@ void modeLove()  {
     memcpy(currentScreen, tempCompiled, NUMLEDS);
   }
 }
-
-
 
 //-------------------------------------------------------------------------------------------------------------
 //SETUP
