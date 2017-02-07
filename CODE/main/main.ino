@@ -1,7 +1,4 @@
 // TO-DOs:
-// - hookup 3 buttons to breadboard and test button code 
-// - hookup photocell and see what kind of max/min values I get
-// - adapt photocell read code such that it truncates appropriately, then MAPS values appropriately
 // - put a low-pass filter on the current brightness level, so that it can't
 //   jump around in the middle of transitions or flicker in general
 // - DELETE ALL CODE THAT BEGINS WITH ////
@@ -948,15 +945,26 @@ void addOneHour()  {
 }
 
 //-------------------------------------------------------------------------------------------------------------
-void readPhotocell()  {
+int readPhotocell()  {
   // Read and serial print brightness of photocell
   photocellReading = analogRead(PHOTOCELLPIN);
-  Serial.print("Analog reading = ");
-  Serial.println(photocellReading); // the raw analog reading
+//  Serial.print("Analog reading = ");
+//  Serial.println(photocellReading); // the raw analog reading
+  return photocellReading;
 }
 
 //-------------------------------------------------------------------------------------------------------------
 void adjustMaxIntensity()  {
+  int reading = readPhotocell();
+
+  if (reading < 120)  {
+    reading = 120;
+  }
+  else if (reading > 980)  {
+    reading = 980;
+  }
+  
+  nowBrightIndex = map(reading,120,980,1,sizeof(brightLevels));
 }
 
 //-------------------------------------------------------------------------------------------------------------
@@ -1708,11 +1716,8 @@ void setup() {
 void loop() {
   
   checkButtons();
-
 //  readPhotocell();
-  
-//  adjustMaxIntensity();
-
+  adjustMaxIntensity();
 
   // update LEDs and choose run mode    
   if ((millis() - ledLastUpdate) > ledDelay) {
