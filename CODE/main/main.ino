@@ -123,9 +123,9 @@ LETTER to LED strip NUMBER decoder
 #define CLOCKPIN   10
 
 // CHECK OR UPDATE(but1read == HIGH) && ((millis()
-#define BUT3PIN 8   // minute++
-#define BUT2PIN 7   // hour++
-#define BUT1PIN 9  // change mode++
+#define BUT3PIN 9   // minute++
+#define BUT2PIN 8   // hour++
+#define BUT1PIN 7  // change mode++
 #define PHOTOCELLPIN 0 // the cell and 10K pulldown are connected to A0
 
 //-------------------------------------------------------------------------------------------------------------
@@ -145,7 +145,7 @@ uint8_t brightLevels[] = {0x00,
                           0x89,0x96,0xA4,0xB3,0xC4,0xD6,0xE9,0xFF};
 
 int frameDelay = 10;          // (milliseconds), time between transition screens
-int nowBrightIndex = 10;      // (0-59), index for lookup table array above
+int nowBrightIndex = 20;      // (0-48), index for lookup table array above
 int transUpBrightIndex = 0;
 int transDownBrightIndex = 0;
 bool transitioningNow = false; // track if we are still going to transition
@@ -189,7 +189,7 @@ const int MODESECONDS = 2;
 const int MODETEST = 3;
 const int MODELOVE = 4;
 
-const int ledDelay = 100;       // ms
+const int ledDelay = 10;       // msec
 
 unsigned long ledLastUpdate = 0;
 int currentMode = MODEDEFAULT;
@@ -1685,6 +1685,10 @@ void setup() {
 
   adjustTime(DEFAULTTIME);
 
+  if (nowBrightIndex > sizeof(brightLevels))  {
+    nowBrightIndex = sizeof(brightLevels)-1;
+  }
+
   zeroOutArray(currentScreen,NUMLEDS);
 }
 
@@ -1693,13 +1697,13 @@ void setup() {
 //-------------------------------------------------------------------------------------------------------------
 void loop() {
   
-//  checkButtons();
+  checkButtons();
 
 //  readPhotocell();
   
 //  adjustMaxIntensity();
 
-  /*
+
   // update LEDs and choose run mode    
   if ((millis() - ledLastUpdate) > ledDelay) {
     ledLastUpdate = millis();
@@ -1719,12 +1723,12 @@ void loop() {
       modeLove();
     }
   }
-  */
 
 //  modeDefault();  // remove later, this is just a placeholder 
-  modeDefaultSecs();
+//  modeDefaultSecs();
 //modeSeconds();
 //  modeLove();
 //  modeTest();
-  delay(10);
+  
+//  delay(10);
 }
