@@ -144,7 +144,7 @@ uint8_t brightLevels[] = {0x00,
                           0x43,0x4A,0x51,0x58,0x60,0x69,0x73,0x7E,
                           0x89,0x96,0xA4,0xB3,0xC4,0xD6,0xE9,0xFF};
 
-int frameDelay = 10;          // (milliseconds), time between transition screens
+int frameDelay = 15;          // (milliseconds), time between transition screens
 int nowBrightIndex = 20;      // (0-48), index for lookup table array above
 int transUpBrightIndex = 0;
 int transDownBrightIndex = 0;
@@ -996,11 +996,12 @@ void doButton1()  {  // mode change
     currentMode = MODESECONDS;
   }
   else if (currentMode == MODESECONDS)  {
-    currentMode = MODETEST;
-  }
-  else if (currentMode == MODETEST)  {
+//    currentMode = MODETEST;
     currentMode = MODELOVE;
   }
+//  else if (currentMode == MODETEST)  {
+//    currentMode = MODELOVE;
+//  }
   else if (currentMode == MODELOVE)  {
     currentMode = MODEDEFAULT;
   }
@@ -1551,6 +1552,8 @@ void modeTest()  {
         strip.setPixelColor(i,0);
       }
       strip.show();
+
+      checkButtons();
       
       int currentPixel = 0;      
       for (int j = 0; j < NUMLEDS; j++)  {
@@ -1567,6 +1570,8 @@ void modeTest()  {
         strip.show();
         currentPixel++;
         delay(pauseDuration);
+
+       checkButtons();
       }
     }
     break;
@@ -1576,6 +1581,8 @@ void modeTest()  {
         strip.setPixelColor(i,testBrightness);
       }
       strip.show();
+
+      checkButtons();
       
       int currentPixel = 0;      
       for (int j = 0; j < NUMLEDS; j++)  {
@@ -1590,6 +1597,9 @@ void modeTest()  {
           }
         }
         strip.show();
+       
+        checkButtons();
+        
         currentPixel++;
         delay(pauseDuration);
       }
