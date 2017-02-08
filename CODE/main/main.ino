@@ -1,6 +1,8 @@
 // TO-DOs:
 // - put a low-pass filter on the current brightness level, so that it can't
 //   jump around in the middle of transitions or flicker in general
+// - ADD REAL-TIME CLOCK CRYSTAL, BATTERY TO TEENSY
+//    - https://www.pjrc.com/teensy/td_libs_Time.html#teensy3
 // - DELETE ALL CODE THAT BEGINS WITH ////
 // - arrange variables nicely, and go through comments once
 
@@ -1696,17 +1698,31 @@ void setup() {
   strip.begin(); // Initialize pins for output
   strip.show();  // Turn all LEDs off ASAP
 
-  //CHECK OR UPDATE
   pinMode (BUT1PIN, INPUT);
   pinMode (BUT2PIN, INPUT);
-  pinMode (BUT3PIN, INPUT);  
+  pinMode (BUT3PIN, INPUT); 
+
+  // set all pins to output for power saving: https://www.pjrc.com/teensy/low_power.html
+  pinMode (0, OUTPUT);
+  pinMode (1, OUTPUT);
+  pinMode (2, OUTPUT);  
+  pinMode (3, OUTPUT);
+  pinMode (4, OUTPUT);
+  pinMode (5, OUTPUT);
+  pinMode (6, OUTPUT);
+  pinMode (12, OUTPUT);
+  pinMode (13, OUTPUT);
+  pinMode (15, OUTPUT);
+  pinMode (16, OUTPUT);
+  pinMode (17, OUTPUT);
+  pinMode (18, OUTPUT);
+  pinMode (19, OUTPUT);
+  pinMode (20, OUTPUT);
+  pinMode (21, OUTPUT);
+  pinMode (22, OUTPUT);
+  pinMode (23, OUTPUT);
 
   adjustTime(DEFAULTTIME);
-
-  if (nowBrightIndex > sizeof(brightLevels))  {
-    nowBrightIndex = sizeof(brightLevels)-1;
-  }
-
   zeroOutArray(currentScreen,NUMLEDS);
 }
 
